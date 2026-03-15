@@ -48,6 +48,9 @@
   /* Glass morphism */
   --glass-bg: rgba(253, 250, 246, 0.72);
   --glass-border: rgba(253, 250, 246, 0.6);
+
+  /* Panel — opaque card surface; no backdrop-filter so it doesn't compete with the top bar glass */
+  --panel-bg: rgba(253, 250, 246, 0.97);
 }
 
 /* --- Design Tokens: Dark Theme --- */
@@ -82,6 +85,7 @@
 
   --glass-bg: rgba(28, 24, 20, 0.82);
   --glass-border: rgba(42, 36, 32, 0.6);
+  --panel-bg: rgba(28, 24, 20, 0.97);
 }
 
 /* --- Shared Tokens (theme-independent) --- */
@@ -152,7 +156,7 @@
   --ease-in-out: ease-in-out;
 
   /* Layout */
-  --content-width: 680px;
+  --content-width: 760px;
   --sidebar-width: 320px;
 
   /* Card type left-edge colors */

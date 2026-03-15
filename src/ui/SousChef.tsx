@@ -189,7 +189,13 @@ export default function SousChef({ apiKey, recipe, kitchen, runState: externalRu
           aria-modal="false"
         >
           <div className={styles.panelHeader}>
-            <span className={styles.panelHeaderIcon} aria-hidden="true">🧑‍🍳</span>
+            <svg className={styles.panelHeaderIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M8 6 C8 6 6 6.5 4.5 9 C3.5 11 5 14 5 14 L19 14 C19 14 20.5 11 19.5 9 C18 6.5 16 6 16 6 C15.5 4.2 13.9 3 12 3 C10.1 3 8.5 4.2 8 6 Z" />
+              <rect x="5" y="14" width="14" height="3" rx="1" />
+              <line x1="9" y1="17" x2="9" y2="20" />
+              <line x1="15" y1="17" x2="15" y2="20" />
+              <line x1="9" y1="20" x2="15" y2="20" />
+            </svg>
             <span className={styles.panelHeaderTitle}>Sous Chef</span>
           </div>
 
@@ -275,7 +281,21 @@ export default function SousChef({ apiKey, recipe, kitchen, runState: externalRu
         aria-expanded={isOpen}
       >
         {!isOpen && <span className={styles.hatRing} aria-hidden="true" />}
-        {isOpen ? '✕' : '🧑‍🍳'}
+        {isOpen ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        ) : (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            {/* Chef's hat: dome, brim, and toque band */}
+            <path d="M8 6 C8 6 6 6.5 4.5 9 C3.5 11 5 14 5 14 L19 14 C19 14 20.5 11 19.5 9 C18 6.5 16 6 16 6 C15.5 4.2 13.9 3 12 3 C10.1 3 8.5 4.2 8 6 Z" />
+            <rect x="5" y="14" width="14" height="3" rx="1" />
+            <line x1="9" y1="17" x2="9" y2="20" />
+            <line x1="15" y1="17" x2="15" y2="20" />
+            <line x1="9" y1="20" x2="15" y2="20" />
+          </svg>
+        )}
       </button>
     </>
   )
