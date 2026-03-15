@@ -1,0 +1,26 @@
+// markdownlint configuration for AICard.
+// Applies to all markdown files unless overridden by a .markdownlint.jsonc
+// in a subdirectory (recipe and card files have their own overrides).
+//
+// Rules reference: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+{
+  // Enable all rules by default, then selectively disable below.
+  "default": true,
+
+  // MD013 — line length. Disabled project-wide: recipe purposes, message
+  // config values, and doc prose often exceed 80 chars without being wrong.
+  "MD013": false,
+
+  // MD033 — inline HTML. Some docs use <br> and similar intentionally.
+  "MD033": false,
+
+  // MD036 — emphasis used instead of heading. Our recipe and card format uses
+  // `*Card: TypeName*` on a line by itself as the card declaration. This is
+  // intentional syntax that the parser looks for, not a mis-used heading.
+  "MD036": false,
+
+  // MD060 — table column style (pipe spacing). Our tables use compact style
+  // without spaces around pipes. This is cosmetic and consistent — disabling
+  // avoids ~200 noise violations across the docs.
+  "MD060": false
+}

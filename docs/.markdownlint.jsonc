@@ -1,0 +1,12 @@
+// markdownlint overrides for documentation files.
+// Design and reference docs are structured differently from recipe/card files —
+// duplicate headings within a single doc (e.g. "Design Rationale" appearing
+// in multiple sections) are intentional.
+{
+  "extends": "../.markdownlint.jsonc",
+
+  // MD024 — multiple headings with the same content. Long-form docs like the
+  // Design System naturally reuse section names (e.g. "Design Rationale")
+  // across different top-level sections.
+  "MD024": false
+}

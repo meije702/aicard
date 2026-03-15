@@ -9,12 +9,15 @@
 ## Config
 
 ### To
+
 Who to send the message to. Can be a fixed address or a value from an earlier step (e.g. "customer email").
 
 ### Subject
+
 The subject line (for email). Optional for other message types.
 
 ### Message
+
 The body of the message.
 
 ## Example

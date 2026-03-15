@@ -1,0 +1,9 @@
+// markdownlint overrides for card definition files (*.card.md).
+// Same relaxation as recipe files — heading duplication across cards is fine.
+{
+  "extends": "../../../.markdownlint.jsonc",
+
+  // MD024 — multiple headings with the same content. Multiple cards can have
+  // sections named "Config" or field headings like "### Message".
+  "MD024": false
+}

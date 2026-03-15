@@ -47,7 +47,7 @@ Full persona details in [docs/AICard_Personas.md](docs/AICard_Personas.md).
 
 ## Project structure
 
-```
+```text
 aicard/
   docs/              ← project documents (read-only reference)
   src/

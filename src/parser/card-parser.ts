@@ -84,17 +84,18 @@ function parseConfigFields(lines: string[]): CardConfigField[] {
   return fields
 }
 
-// Extract the lines belonging to a named section (up to the next ## heading)
+// Extract the lines belonging to a named section (up to the next ## heading).
+// Case-insensitive: "## equipment" and "## EQUIPMENT" both match "## Equipment".
 function extractSection(lines: string[], heading: string): string[] {
   const result: string[] = []
   let inSection = false
 
   for (const line of lines) {
-    if (line.trim() === heading) {
+    if (line.trim().toLowerCase() === heading.toLowerCase()) {
       inSection = true
       continue
     }
-    if (inSection && /^##\s/.test(line) && line.trim() !== heading) {
+    if (inSection && /^##\s/.test(line) && line.trim().toLowerCase() !== heading.toLowerCase()) {
       break
     }
     if (inSection) result.push(line)

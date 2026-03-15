@@ -191,6 +191,7 @@ The body of the message.
 Card definition files use the pattern: `card-type-name.card.md`
 
 Examples:
+
 - `listen.card.md`
 - `wait.card.md`
 - `send-message.card.md`

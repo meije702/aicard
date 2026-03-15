@@ -1,0 +1,10 @@
+// markdownlint overrides for recipe files (*.recipe.md).
+// Extends the root config and relaxes the one rule that conflicts with the
+// recipe format.
+{
+  "extends": "../../../.markdownlint.jsonc",
+
+  // MD024 — multiple headings with the same content. Two different recipes
+  // can legitimately both have a step named "Listen for a new order".
+  "MD024": false
+}

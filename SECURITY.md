@@ -7,6 +7,7 @@ If you discover a security vulnerability in AICard, please report it responsibly
 Email: **[TODO: add security contact email]**
 
 Include:
+
 - A description of the vulnerability
 - Steps to reproduce
 - Potential impact

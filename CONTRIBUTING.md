@@ -152,7 +152,7 @@ These are not punishments — they are signals. If a PR hits multiple items on t
 
 ## Commit messages
 
-```
+```text
 area: imperative description of the change
 
 Optional body explaining why, not what.

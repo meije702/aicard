@@ -248,7 +248,7 @@ Cards are the most important visual element in AICard. They must look like physi
 
 #### Card Anatomy
 
-```
+```text
 ┌──────────────────────────────────────┐
 │  ┌──┐                               │
 │  │🎧│  Listen                        │  ← Card type icon + name (display font)
@@ -313,7 +313,7 @@ A recipe displayed in the interface should visually echo its Markdown source —
 
 #### Recipe Anatomy
 
-```
+```text
 ┌─────────────────────────────────────────────────┐
 │                                                 │
 │  Thank You Follow-Up                            │  ← Recipe name (display font, --text-2xl)
@@ -363,7 +363,7 @@ The vertical lines and arrows between steps are subtle — `--surface-mid` color
 
 Sub-recipe references look different from card steps: they appear as a compact, single-line element with a link icon, indicating "this is a complete thing that happens elsewhere."
 
-```
+```text
 │         ▼
 │  ── 4. Acknowledge Receipt ──→               ← Sub-recipe (link-style, single line)
 │         │
@@ -408,7 +408,7 @@ When the chef's hat is tapped, the sous chef panel appears:
 
 The sous chef leads with options, not a text field. Options appear as tappable list items:
 
-```
+```text
 ┌─────────────────────────────────┐
 │                                 │
 │  What can I help with?          │  ← Sous chef prompt (italic, display font)
@@ -431,6 +431,7 @@ The sous chef leads with options, not a text field. Options appear as tappable l
 ```
 
 Option buttons:
+
 - Background: `--surface-light`
 - Border: 1px `--surface-mid`
 - Border radius: 8px
@@ -680,6 +681,7 @@ AICard meets **WCAG 2.1 AA** as a minimum. This is non-negotiable — the "human
 ### Requirements
 
 **Color and Contrast:**
+
 - All text meets 4.5:1 contrast ratio against its background (AA level)
 - Large text (18px+ or 14px+ bold) meets 3:1
 - UI components and graphical objects meet 3:1
@@ -687,6 +689,7 @@ AICard meets **WCAG 2.1 AA** as a minimum. This is non-negotiable — the "human
 - Focus indicators are always visible and meet 3:1 contrast
 
 **Keyboard Navigation:**
+
 - All interactive elements are reachable by keyboard (Tab, Shift+Tab)
 - Focus order follows visual order
 - Custom components implement appropriate ARIA roles and keyboard handlers
@@ -694,6 +697,7 @@ AICard meets **WCAG 2.1 AA** as a minimum. This is non-negotiable — the "human
 - Escape closes panels, modals, and dropdowns
 
 **Screen Readers:**
+
 - All images have meaningful alt text or are marked decorative
 - Form inputs have associated labels
 - Status changes are announced via ARIA live regions
@@ -702,11 +706,13 @@ AICard meets **WCAG 2.1 AA** as a minimum. This is non-negotiable — the "human
 - Card types are announced with their type and purpose
 
 **Motion:**
+
 - `prefers-reduced-motion` is respected throughout
 - No content depends on animation to be understood
 - No flashing content
 
 **Touch:**
+
 - Minimum 44×44px touch targets
 - Adequate spacing between interactive elements (minimum 8px)
 - Swipe gestures always have button alternatives

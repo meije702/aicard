@@ -9,9 +9,11 @@
 ## Config
 
 ### Listen for
+
 What event to listen for. Examples: "new order", "new subscriber", "new message".
 
 ### From
+
 Which piece of equipment to listen on. Must match an equipment name in the kitchen.
 
 ## Example

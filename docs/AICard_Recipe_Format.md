@@ -73,11 +73,13 @@ Where `N` is the step number (1, 2, 3, …) and "Step name" is a plain-English d
 Immediately after the heading, on its own line, the step declares its card type (or sub-recipe):
 
 **Card step:**
+
 ```markdown
 *Card: Card Type Name*
 ```
 
 **Sub-recipe step:**
+
 ```markdown
 *Recipe: Recipe Name*
 ```
@@ -151,6 +153,7 @@ Configuration keys are plain English. The parser normalises them to lowercase.
 Recipe files use the pattern: `recipe-name.recipe.md`
 
 Examples:
+
 - `thank-you-follow-up.recipe.md`
 - `community-message-router.recipe.md`
 - `weekly-report.recipe.md`

@@ -13,6 +13,7 @@ Open questions and things to figure out. This is not a backlog — it's a thinki
 **v1 decision**: use `setTimeout` and keep the tab open. Show a persistent warning before running any recipe with a Wait step. Make the limitation honest and visible — not buried in documentation.
 
 **Future options**:
+
 - A lightweight local service (Electron or a small Node daemon) that handles timers
 - A hosted service that users can opt into
 - The user's own server / cloud function

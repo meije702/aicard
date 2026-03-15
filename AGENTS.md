@@ -85,7 +85,7 @@ Before adding any feature, ask: **"Does Level 1 work yet?"** If not, build that 
 
 ## Project structure
 
-```
+```text
 aicard/
   docs/                          ← project documents (read-only reference)
   src/

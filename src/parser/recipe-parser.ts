@@ -39,7 +39,7 @@ function parsePurpose(lines: string[]): string {
 
 // Parse the ## Kitchen section into a list of equipment names.
 function parseKitchen(lines: string[]): string[] {
-  const sectionLines = extractSection(lines, '## Kitchen')
+  const { lines: sectionLines } = extractSection(lines, '## Kitchen')
   if (sectionLines.length === 0) return []
 
   const equipment: string[] = []
@@ -58,31 +58,55 @@ function parseKitchen(lines: string[]): string[] {
 
 // Parse the ## Steps section into an array of RecipeStep objects.
 function parseSteps(lines: string[], errors: string[]): RecipeStep[] {
-  const sectionLines = extractSection(lines, '## Steps')
+  const { lines: sectionLines, startLine } = extractSection(lines, '## Steps')
 
   if (sectionLines.length === 0) {
     errors.push('Recipe is missing a Steps section. Add ## Steps with at least one step.')
     return []
   }
 
-  // Split the section into individual step blocks, each starting with ### N. Name
-  const stepBlocks = splitIntoStepBlocks(sectionLines)
-  return stepBlocks.map(block => parseStepBlock(block, errors)).filter(Boolean) as RecipeStep[]
+  // Split the section into individual step blocks, each starting with ### N. Name.
+  // Line numbers are tracked so error messages can point to the exact location.
+  const stepBlocks = splitIntoStepBlocks(sectionLines, startLine)
+  const steps = stepBlocks
+    .map(({ block, lineNumber }) => parseStepBlock(block, lineNumber, errors))
+    .filter(Boolean) as RecipeStep[]
+
+  // Fix B: validate that step numbers form a sequential 1-based series.
+  // Out-of-order or duplicate numbers are confusing — the runner processes
+  // steps in file order, not by number, so mismatches hide bugs.
+  for (let i = 0; i < steps.length; i++) {
+    if (steps[i].number !== i + 1) {
+      errors.push(
+        `Step numbers must be sequential starting from 1. ` +
+        `Found step number ${steps[i].number} at position ${i + 1} in the file.`
+      )
+    }
+  }
+
+  return steps
 }
 
 // Extract the lines belonging to a named section (e.g. "## Steps").
-// Returns the lines between this section heading and the next ## heading.
-function extractSection(lines: string[], heading: string): string[] {
+// Returns the lines between this section heading and the next ## heading,
+// plus the 1-based line number of the first content line (for error messages).
+//
+// Fix A: comparison is case-insensitive so "## kitchen" and "## KITCHEN"
+// both match "## Kitchen" — the parser accepts the section regardless of case.
+function extractSection(lines: string[], heading: string): { lines: string[], startLine: number } {
   const result: string[] = []
   let inSection = false
+  let startLine = 0
 
-  for (const line of lines) {
-    if (line.trim() === heading) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (line.trim().toLowerCase() === heading.toLowerCase()) {
       inSection = true
+      startLine = i + 2  // 1-based; the content starts on the next line
       continue
     }
     // Stop at the next level-2 heading
-    if (inSection && /^##\s/.test(line) && line.trim() !== heading) {
+    if (inSection && /^##\s/.test(line) && line.trim().toLowerCase() !== heading.toLowerCase()) {
       break
     }
     if (inSection) {
@@ -90,37 +114,45 @@ function extractSection(lines: string[], heading: string): string[] {
     }
   }
 
-  return result
+  return { lines: result, startLine }
 }
 
 // Split section lines into blocks, each starting with a ### heading.
 // Lines that appear before the first ### heading (e.g. blank lines at the
 // top of the section) are ignored — they are not part of any step.
-function splitIntoStepBlocks(lines: string[]): string[][] {
-  const blocks: string[][] = []
+//
+// Fix C: returns the 1-based line number of each ### heading so error
+// messages can point to the exact line in the file.
+function splitIntoStepBlocks(lines: string[], sectionStartLine: number): { block: string[], lineNumber: number }[] {
+  const blocks: { block: string[], lineNumber: number }[] = []
   let current: string[] | null = null
+  let currentLineNumber = 0
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
     if (/^###\s/.test(line)) {
-      if (current !== null) blocks.push(current)
+      if (current !== null) blocks.push({ block: current, lineNumber: currentLineNumber })
       current = [line]
+      currentLineNumber = sectionStartLine + i
     } else if (current !== null) {
       current.push(line)
     }
     // Lines before the first ### heading are ignored
   }
-  if (current !== null) blocks.push(current)
+  if (current !== null) blocks.push({ block: current, lineNumber: currentLineNumber })
 
   return blocks
 }
 
 // Parse a single step block into a CardStep or SubRecipeStep.
-function parseStepBlock(block: string[], errors: string[]): RecipeStep | null {
+// Fix C: lineNumber is the 1-based position of the ### heading in the source
+// file. Error messages include it so contributors can jump directly to the line.
+function parseStepBlock(block: string[], lineNumber: number, errors: string[]): RecipeStep | null {
   const headingLine = block[0]
   // ### N. Step name
   const headingMatch = headingLine.match(/^###\s+(\d+)\.\s+(.+)$/)
   if (!headingMatch) {
-    errors.push(`Could not parse step heading: "${headingLine}"`)
+    errors.push(`Line ${lineNumber}: Could not parse step heading: "${headingLine}"`)
     return null
   }
 
@@ -152,7 +184,9 @@ function parseStepBlock(block: string[], errors: string[]): RecipeStep | null {
     }
   }
 
-  errors.push(`Step "${name}" has no card or recipe declaration. Add a line like: *Card: Listen*`)
+  errors.push(
+    `Line ${lineNumber}: Step "${name}" has no card or recipe declaration. Add a line like: *Card: Listen*`
+  )
   return null
 }
 

@@ -9,6 +9,7 @@ None.
 ## Config
 
 ### How long
+
 How long to wait before continuing. Examples: "3 days", "1 hour", "30 minutes".
 
 ## Example

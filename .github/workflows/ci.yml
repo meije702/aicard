@@ -31,3 +31,18 @@ jobs:
 
       - name: Test
         run: deno task test
+
+  lint-markdown:
+    name: Lint markdown
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Lint markdown
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: |
+            **/*.md
+            !node_modules
