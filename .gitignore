@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+aicard
+
+# Vite
+.vite/
+
+# Environment
+.env
+.env.*
+*.local
+
+# OS
+.DS_Store
+
+# Claude Code
+.claude/

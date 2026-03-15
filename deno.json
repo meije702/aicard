@@ -1,0 +1,28 @@
+{
+  "nodeModulesDir": "auto",
+  "tasks": {
+    "dev": "deno run -A npm:vite@^5.4.0",
+    "build:frontend": "deno run -A npm:vite@^5.4.0 build",
+    "compile": "deno compile --allow-net --allow-read --include dist src/server.ts -o aicard",
+    "build": "deno task build:frontend && deno task compile",
+    "test": "deno test --allow-read src/"
+  },
+  "imports": {
+    "react": "npm:react@^18.3.0",
+    "react/jsx-runtime": "npm:react@^18.3.0/jsx-runtime",
+    "react-dom/client": "npm:react-dom@^18.3.0/client",
+    "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@^0.39.0",
+    "vite": "npm:vite@^5.4.0",
+    "@vitejs/plugin-react": "npm:@vitejs/plugin-react@^4.3.0",
+    "@cucumber/gherkin": "npm:@cucumber/gherkin@^29.0.0",
+    "@cucumber/messages": "npm:@cucumber/messages@^26.0.0"
+  },
+  "compilerOptions": {
+    "lib": ["ES2020", "DOM", "DOM.Iterable", "deno.ns"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  }
+}

@@ -1,0 +1,291 @@
+/* ==========================================================================
+   AICard Design System
+   The visual language of a kitchen that invites you to cook.
+   ========================================================================== */
+
+/* --- Reset --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* --- Design Tokens: Light Theme (default) --- */
+[data-theme="light"], :root {
+  /* Surfaces — the kitchen surfaces */
+  --surface-lightest: #FDFAF6;
+  --surface-light:    #F5F0E8;
+  --surface-mid:      #E8E0D4;
+  --surface-dark:     #D4C9B8;
+  --surface-darkest:  #8C7E6A;
+
+  /* Text — ink on paper */
+  --text-primary:   #2C2416;
+  --text-secondary: #5C5040;
+  --text-tertiary:  #8C7E6A;
+  --text-inverse:   #FDFAF6;
+
+  /* Accent — copper and herb */
+  --accent-primary:          #C17832;
+  --accent-primary-hover:    #A86528;
+  --accent-primary-subtle:   #F5E6D0;
+  --accent-secondary:        #5B8C5A;
+  --accent-secondary-hover:  #4A7A49;
+  --accent-secondary-subtle: #E2EDDF;
+
+  /* Semantic — what needs attention */
+  --status-info:    #4A7FA5;
+  --status-warning: #D4943A;
+  --status-error:   #C45D4A;
+  --status-success: #5B8C5A;
+
+  /* Derived semantic backgrounds */
+  --status-error-subtle:   #FDF2F0;
+  --status-warning-subtle: #FDF6ED;
+  --status-info-subtle:    #EDF4FA;
+  --status-success-subtle: #E2EDDF;
+
+  /* Glass morphism */
+  --glass-bg: rgba(253, 250, 246, 0.72);
+  --glass-border: rgba(253, 250, 246, 0.6);
+}
+
+/* --- Design Tokens: Dark Theme --- */
+[data-theme="dark"] {
+  --surface-lightest: #1C1814;
+  --surface-light:    #2A2420;
+  --surface-mid:      #3A3228;
+  --surface-dark:     #4A4034;
+  --surface-darkest:  #8C7E6A;
+
+  --text-primary:   #E8E0D4;
+  --text-secondary: #B8A88C;
+  --text-tertiary:  #8C7E6A;
+  --text-inverse:   #1C1814;
+
+  --accent-primary:          #D4903E;
+  --accent-primary-hover:    #E0A050;
+  --accent-primary-subtle:   #3A2E20;
+  --accent-secondary:        #6FA06E;
+  --accent-secondary-hover:  #80B07F;
+  --accent-secondary-subtle: #2A3428;
+
+  --status-info:    #5A9FC5;
+  --status-warning: #E0A44A;
+  --status-error:   #D47060;
+  --status-success: #6FA06E;
+
+  --status-error-subtle:   #2C1E1A;
+  --status-warning-subtle: #2C2618;
+  --status-info-subtle:    #1A2430;
+  --status-success-subtle: #2A3428;
+
+  --glass-bg: rgba(28, 24, 20, 0.82);
+  --glass-border: rgba(42, 36, 32, 0.6);
+}
+
+/* --- Shared Tokens (theme-independent) --- */
+:root {
+  /* Typography */
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body:    'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+
+  /* Type scale (1.25 ratio — Major Third) */
+  --text-xs:   0.75rem;      /* 12px */
+  --text-sm:   0.875rem;     /* 14px */
+  --text-base: 1rem;         /* 16px */
+  --text-md:   1.125rem;     /* 18px */
+  --text-lg:   1.25rem;      /* 20px */
+  --text-xl:   1.5625rem;    /* 25px */
+  --text-2xl:  2rem;         /* 32px */
+  --text-3xl:  2.5rem;       /* 40px */
+
+  /* Line heights */
+  --leading-tight:   1.2;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.6;
+
+  /* Letter spacing */
+  --tracking-tight:  -0.02em;
+  --tracking-normal: -0.01em;
+  --tracking-wide:   0.06em;
+
+  /* Font weights */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* Spacing (8px base unit) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* Border radius */
+  --radius-sm:   6px;
+  --radius:      12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-full: 9999px;
+
+  /* Shadows (warm-tinted — rgba(44, 36, 22, ...)) */
+  --shadow-xs:    0 1px 2px rgba(44, 36, 22, 0.06);
+  --shadow-sm:    0 1px 3px rgba(44, 36, 22, 0.08);
+  --shadow-md:    0 4px 12px rgba(44, 36, 22, 0.12);
+  --shadow-lg:    0 8px 24px rgba(44, 36, 22, 0.16);
+  --shadow-float: 0 24px 48px -12px rgba(44, 36, 22, 0.2);
+
+  /* Motion */
+  --duration-instant: 100ms;
+  --duration-fast:    200ms;
+  --duration-normal:  300ms;
+  --duration-slow:    500ms;
+
+  --ease-out:    ease-out;
+  --ease-in-out: ease-in-out;
+
+  /* Layout */
+  --content-width: 680px;
+  --sidebar-width: 320px;
+
+  /* Card type left-edge colors */
+  --card-color-listen:       #6A9EC0;
+  --card-color-wait:         #C4A960;
+  --card-color-send-message: #C17832;
+  --card-color-filter:       #7A9C7A;
+  --card-color-summarize:    #9C8E78;
+  --card-color-transform:    #B8704A;
+  --card-color-decide:       #6A7F96;
+  --card-color-store:        #8C6A4A;
+}
+
+/* --- Base Typography --- */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  letter-spacing: var(--tracking-normal);
+  color: var(--text-primary);
+  background: var(--surface-lightest);
+}
+
+/* Display font for headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+::selection {
+  background: var(--accent-primary-subtle);
+  color: var(--accent-primary-hover);
+}
+
+/* --- Focus --- */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* --- Scrollbar (subtle) --- */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-dark);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--surface-darkest);
+}
+
+/* --- Animation Keyframes --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes staggerFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-4px); }
+}
+
+@keyframes ringPulse {
+  0%, 100% { opacity: 0; transform: scale(1); }
+  50%      { opacity: 0.15; transform: scale(1.08); }
+}
+
+@keyframes stepPulse {
+  0%, 100% { border-left-color: var(--accent-secondary); opacity: 1; }
+  50%      { border-left-color: var(--accent-secondary-subtle); opacity: 0.7; }
+}
+
+@keyframes connectingPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
+/* --- Reduced Motion --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

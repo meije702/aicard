@@ -1,0 +1,74 @@
+/* App — the frame: warm top bar + animated content area */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Frosted glass top bar */
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--surface-mid);
+  padding: var(--space-3) var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+  user-select: none;
+}
+
+/* "AI" portion — slightly lighter weight per brand spec */
+.wordmarkAI {
+  font-weight: var(--weight-medium);
+}
+
+.breadcrumbSeparator {
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  user-select: none;
+}
+
+.breadcrumbLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+}
+
+/* Theme toggle */
+.themeToggle {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--surface-mid);
+  border-radius: var(--radius);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: background var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out);
+}
+
+.themeToggle:hover {
+  background: var(--surface-light);
+  border-color: var(--surface-dark);
+}
+
+/* Content area — fades in on screen change */
+.content {
+  flex: 1;
+  animation: fadeIn var(--duration-slow) var(--ease-out);
+}
