@@ -27,7 +27,7 @@ jobs:
         run: deno install
 
       - name: Type check
-        run: deno check src/
+        run: deno task check
 
       - name: Test
         run: deno task test

@@ -1,8 +1,5 @@
 /// <reference types="vite/client" />
 
-// CSS Modules type declarations — Vite handles the imports at runtime,
-// but TypeScript needs to know the shape of the import.
-declare module '*.module.css' {
-  const classes: { readonly [key: string]: string }
-  export default classes
-}
+// vite/client already declares *.module.css — no need to redeclare here.
+// This file exists solely to pull in Vite's client-side ambient types
+// (import.meta.env, import.meta.hot, asset imports, etc.).
