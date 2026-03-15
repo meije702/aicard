@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Recipe, Kitchen as KitchenType } from '../types.ts'
+import type { RunState } from '../runner/recipe-runner.ts'
 import { createSousChef } from '../sous-chef/sous-chef.ts'
 import styles from './SousChef.module.css'
 
@@ -13,6 +14,7 @@ interface Props {
   apiKey: string
   recipe: Recipe | null
   kitchen: KitchenType
+  runState?: RunState | null
 }
 
 type HatState = 'closed' | 'options' | 'asking'
@@ -36,7 +38,7 @@ function LoadingDots() {
   )
 }
 
-export default function SousChef({ apiKey, recipe, kitchen }: Props) {
+export default function SousChef({ apiKey, recipe, kitchen, runState: externalRunState }: Props) {
   const [hatState, setHatState] = useState<HatState>('closed')
   const [options, setOptions] = useState<string[]>([])
   const [loadingOptions, setLoadingOptions] = useState(false)
@@ -90,7 +92,11 @@ export default function SousChef({ apiKey, recipe, kitchen }: Props) {
 
     try {
       const sousChef = createSousChef(apiKey)
-      const opts = await sousChef.getHatOptions(recipe, null)
+      // Pass the current step name from run state so the sous chef can give
+      // contextual suggestions (e.g., "Your Shopify connection is missing")
+      const currentStep = externalRunState?.steps.find(s => s.status === 'running')
+        ?? externalRunState?.steps.find(s => s.status === 'failed')
+      const opts = await sousChef.getHatOptions(recipe, currentStep?.name ?? null, kitchen)
       setOptions(opts)
     } catch {
       setOptions([

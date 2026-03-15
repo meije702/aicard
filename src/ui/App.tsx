@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Recipe } from '../types.ts'
+import type { RunState } from '../runner/recipe-runner.ts'
 import { parseRecipe } from '../parser/recipe-parser.ts'
 import { loadKitchen, saveKitchen, upsertEquipment } from '../kitchen/kitchen-state.ts'
 import { createEquipment } from '../kitchen/equipment.ts'
@@ -33,6 +34,7 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme)
   })
   const [activeRecipe, setActiveRecipe] = useState<Recipe | null>(null)
+  const [activeRunState, setActiveRunState] = useState<RunState | null>(null)
   // Persist API key to localStorage so it survives page refreshes (Issue 6).
   // TRADE-OFF: localStorage is not encrypted. We treat the key like any
   // browser-saved credential — good enough for v1, not a vault.
@@ -115,8 +117,9 @@ export default function App() {
           <RecipeView
             recipe={activeRecipe}
             kitchen={kitchen}
-            onBack={() => setScreen('kitchen')}
+            onBack={() => { setScreen('kitchen'); setActiveRunState(null) }}
             onConnectEquipment={handleConnectEquipment}
+            onRunStateChange={setActiveRunState}
           />
         )}
       </main>
@@ -125,6 +128,7 @@ export default function App() {
         apiKey={apiKey}
         recipe={activeRecipe}
         kitchen={kitchen}
+        runState={activeRunState}
       />
     </div>
   )

@@ -10,7 +10,9 @@ export interface CardExecutor {
 
   // Check that the kitchen has everything this card needs before the recipe runs.
   // Called by the sous chef during the readiness check.
-  checkEquipment(kitchen: Kitchen): EquipmentCheck
+  // Config is passed so executors can validate against specific equipment names
+  // (e.g., the Listen card needs the service named in its "from" config).
+  checkEquipment(kitchen: Kitchen, config: CardConfig): EquipmentCheck
 
   // Run the card. Returns output data that flows into the next step's context.
   execute(

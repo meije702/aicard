@@ -2,7 +2,7 @@
 // This is what Maria sees after she opens a recipe file.
 // A beautiful step-by-step tracker with a vertical timeline.
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Recipe, Kitchen as KitchenType } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import {
@@ -12,6 +12,7 @@ import {
   saveRunState,
   loadRunState,
   clearRunState,
+  clearAllRunStates,
 } from '../runner/recipe-runner.ts'
 import CardConfig from './CardConfig.tsx'
 import styles from './RecipeView.module.css'
@@ -21,6 +22,7 @@ interface Props {
   kitchen: KitchenType
   onBack: () => void
   onConnectEquipment: (name: string) => void
+  onRunStateChange?: (state: RunState | null) => void
 }
 
 function equipmentIcon(name: string): string {
@@ -33,7 +35,7 @@ function equipmentIcon(name: string): string {
   return '🔌'
 }
 
-export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment }: Props) {
+export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment, onRunStateChange }: Props) {
   // Hydrate from localStorage — if this recipe was mid-run when the tab closed,
   // we show the last known state and offer to restart or start fresh.
   const [runState, setRunState] = useState<RunState | null>(() => loadRunState(recipe.name))
@@ -44,16 +46,25 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
   // A run is "paused" if we have a saved state that wasn't completed cleanly.
   const isPaused = runState !== null && !runState.complete && !isRunning
 
-  const { ready, missing } = checkRecipeReadiness(activeRecipe, kitchen)
+  // Notify the parent (App) whenever run state changes so SousChef can use it
+  useEffect(() => {
+    onRunStateChange?.(runState)
+  }, [runState, onRunStateChange])
+
+  const { ready, blockers } = checkRecipeReadiness(activeRecipe, kitchen)
+  const equipmentBlockers = blockers.filter(b => b.kind === 'equipment')
+  const cardTypeBlockers = blockers.filter(b => b.kind === 'card-type')
   const hasWaitSteps = recipeHasWaitSteps(activeRecipe)
 
   function handleStartFresh() {
-    clearRunState(activeRecipe.name)
+    // Clear only this specific paused run, not siblings with the same name.
+    if (runState) clearRunState(runState.runId)
     setRunState(null)
   }
 
   async function handleRun() {
-    clearRunState(activeRecipe.name)
+    // Before starting, wipe all prior runs for this recipe — none are worth recovering.
+    clearAllRunStates(activeRecipe.name)
     setIsRunning(true)
     setRunState(null)
     const finalState = await runRecipe(activeRecipe, kitchen, (state) => {
@@ -65,7 +76,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
     setIsRunning(false)
     // Clear once cleanly complete — no recovery needed
     if (finalState.complete) {
-      clearRunState(activeRecipe.name)
+      clearAllRunStates(activeRecipe.name)
     }
   }
 
@@ -289,9 +300,18 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
         </button>
 
         {!ready && !isRunning && (
-          <p className={styles.runHint}>
-            Connect {missing.join(' and ')} to run this recipe
-          </p>
+          <div className={styles.runHint}>
+            {equipmentBlockers.length > 0 && (
+              <p>Connect {equipmentBlockers.map(b => b.label).join(' and ')} to run this recipe.</p>
+            )}
+            {cardTypeBlockers.length > 0 && (
+              <p>
+                {cardTypeBlockers.length === 1
+                  ? `The "${cardTypeBlockers[0].label}" card isn't in your pantry yet.`
+                  : `Cards not in your pantry: ${cardTypeBlockers.map(b => `"${b.label}"`).join(', ')}.`}
+              </p>
+            )}
+          </div>
         )}
 
         {runState?.complete && !isRunning && (

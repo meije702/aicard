@@ -11,7 +11,7 @@ import type { CardExecutor } from './card-executor.ts'
 export const waitExecutor: CardExecutor = {
   type: 'wait',
 
-  checkEquipment(_kitchen: Kitchen): EquipmentCheck {
+  checkEquipment(_kitchen: Kitchen, _config: CardConfig): EquipmentCheck {
     // Wait needs no equipment
     return { ready: true, missing: [] }
   },

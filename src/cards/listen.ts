@@ -7,14 +7,25 @@ import type { CardExecutor } from './card-executor.ts'
 export const listenExecutor: CardExecutor = {
   type: 'listen',
 
-  checkEquipment(kitchen: Kitchen): EquipmentCheck {
-    // Listen needs the equipment named in its "from" config to be connected.
-    // We can't check config here (it's not passed), so we verify at execute time.
-    // At the kitchen-readiness stage, we confirm at least one service is connected.
-    const hasAnyEquipment = kitchen.equipment.some(e => e.connected)
+  checkEquipment(kitchen: Kitchen, config: CardConfig): EquipmentCheck {
+    const from = config['from']
+
+    if (!from) {
+      // No specific equipment named — check for any connection
+      const hasAnyEquipment = kitchen.equipment.some(e => e.connected)
+      return {
+        ready: hasAnyEquipment,
+        missing: hasAnyEquipment ? [] : ['a connected service to listen to'],
+      }
+    }
+
+    // Check that the specific named equipment is connected
+    const found = kitchen.equipment.find(
+      e => e.name.toLowerCase() === from.toLowerCase() && e.connected
+    )
     return {
-      ready: hasAnyEquipment,
-      missing: hasAnyEquipment ? [] : ['a connected service to listen to'],
+      ready: !!found,
+      missing: found ? [] : [from],
     }
   },
 

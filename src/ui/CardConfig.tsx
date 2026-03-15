@@ -38,6 +38,8 @@ export default function CardConfig({ step, onSave, onCancel }: Props) {
         ))}
       </div>
 
+      <p className={styles.configHint}>Changes apply to this run only. The original recipe file is not modified.</p>
+
       <div className={styles.configActions}>
         <button
           className={styles.cancelButton}
