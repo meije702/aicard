@@ -28,6 +28,21 @@ interface Toast {
 
 let toastCounter = 0
 
+// Map API errors to Maria-friendly messages.
+function sousChefErrorMessage(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err)
+  if (msg.includes('401') || msg.includes('invalid') || msg.includes('auth')) {
+    return "Your API key doesn't look right. Double-check it at console.anthropic.com and try again."
+  }
+  if (msg.includes('429') || msg.includes('rate')) {
+    return "The sous chef is a bit busy right now. Wait a moment and try again."
+  }
+  if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) {
+    return "Can't reach the sous chef — check your internet connection and try again."
+  }
+  return "I couldn't reach the sous chef right now. Check your API key and try again."
+}
+
 function LoadingDots() {
   return (
     <span className={styles.loadingDots}>
@@ -98,7 +113,8 @@ export default function SousChef({ apiKey, recipe, kitchen, runState: externalRu
         ?? externalRunState?.steps.find(s => s.status === 'failed')
       const opts = await sousChef.getHatOptions(recipe, currentStep?.name ?? null, kitchen)
       setOptions(opts)
-    } catch {
+    } catch (err) {
+      console.error('[sous chef] getHatOptions failed:', err)
       setOptions([
         'Check if my kitchen is ready',
         'What does this recipe do?',
@@ -129,8 +145,9 @@ export default function SousChef({ apiKey, recipe, kitchen, runState: externalRu
       const sousChef = createSousChef(apiKey)
       const response = await sousChef.ask(q, recipe, kitchen)
       setAnswer(response)
-    } catch {
-      setAnswer("I couldn't reach the sous chef right now. Check your API key and try again.")
+    } catch (err) {
+      console.error('[sous chef] ask failed:', err)
+      setAnswer(sousChefErrorMessage(err))
     } finally {
       setLoadingAnswer(false)
     }
