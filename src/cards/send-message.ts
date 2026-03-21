@@ -63,22 +63,21 @@ export const sendMessageExecutor: CardExecutor = {
       }
     }
 
-    // If we have an interaction callback, show the composed message for review
+    // If we have an interaction callback, show the composed message for review.
+    // The mailto: link is included as a 'link' field so the UI renders it as
+    // a native <a href> the user clicks — avoiding popup-blocker issues from
+    // programmatic window.open() calls.
     if (onInteraction) {
+      const mailtoUrl = buildMailtoUrl(to, subject, message)
       await onInteraction({
-        prompt: 'Ready to send this message. Review it and open in your email:',
+        prompt: 'Ready to send this message. Review it, then click the link to open in your email app:',
         fields: [
           { key: 'to', label: 'To', defaultValue: to, readOnly: true },
           { key: 'subject', label: 'Subject', defaultValue: subject, readOnly: true },
           { key: 'message', label: 'Message', defaultValue: message, readOnly: true },
+          { key: 'mailto', label: 'Open in email app', defaultValue: mailtoUrl, type: 'link' },
         ],
       })
-
-      // Open the user's email client with the composed message
-      const mailtoUrl = buildMailtoUrl(to, subject, message)
-      if (typeof globalThis.open === 'function') {
-        globalThis.open(mailtoUrl, '_blank')
-      }
     }
 
     return {

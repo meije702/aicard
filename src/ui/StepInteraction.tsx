@@ -41,7 +41,8 @@ export default function StepInteraction({ interaction, onSubmit }: Props) {
   const canSubmit = allReadOnly || editableFields.every(f => values[f.key]?.trim())
 
   // Choose a button label based on the mode
-  const buttonLabel = allReadOnly ? 'Open in email' : 'Got one!'
+  const hasLinkField = interaction.fields.some(f => f.type === 'link')
+  const buttonLabel = hasLinkField ? 'Done' : (allReadOnly ? 'Confirmed' : 'Got one!')
 
   return (
     <form className={styles.container} onSubmit={handleSubmit}>
@@ -53,8 +54,20 @@ export default function StepInteraction({ interaction, onSubmit }: Props) {
             <label className={styles.fieldLabel} htmlFor={`interaction-${field.key}`}>
               {field.label}
             </label>
-            {field.readOnly ? (
-              // Read-only: use a textarea for long content, span for short
+            {field.type === 'link' ? (
+              // Link field: render as a native anchor so the browser treats it
+              // as a user-initiated click (no popup blocker) — Finding 15 fix
+              <a
+                id={`interaction-${field.key}`}
+                href={field.defaultValue}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.fieldLink}
+              >
+                {field.label}
+              </a>
+            ) : field.readOnly ? (
+              // Read-only: use a textarea for long content, input for short
               field.key === 'message' ? (
                 <textarea
                   id={`interaction-${field.key}`}

@@ -74,6 +74,10 @@ export interface Equipment {
   type: string           // e.g. "shopify", "gmail", "discord"
   connected: boolean
   config: Record<string, string>
+  // 'full': can act on Maria's behalf (e.g. direct API access)
+  // 'handoff': prepares something for Maria to send/complete herself (e.g. mailto:)
+  // Defaults to 'full' when not set — backwards-compatible with existing localStorage data.
+  mode?: 'full' | 'handoff'
 }
 
 // The result of checking whether the kitchen has what a card needs

@@ -135,7 +135,7 @@ export const listenExecutor: CardExecutor = {
       return {
         success: true,
         output,
-        message: `Picked up a new ${listenFor} from ${from}.`,
+        message: `Picked up ${listenFor} from ${from}.`,
       }
     }
 
@@ -148,7 +148,7 @@ export const listenExecutor: CardExecutor = {
         source: from,
         'customer email': 'customer@example.com',
       },
-      message: `Picked up a new ${listenFor} from ${from}.`,
+      message: `Picked up ${listenFor} from ${from}.`,
     }
   },
 

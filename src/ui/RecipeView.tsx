@@ -3,6 +3,12 @@
 // A beautiful step-by-step tracker with a vertical timeline.
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+
+const CARD_LABELS: Record<string, string> = {
+  listen: 'Listen',
+  wait: 'Wait',
+  'send-message': 'Send Message',
+}
 import type { Recipe, Kitchen as KitchenType } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import type { StepInteraction as StepInteractionType } from '../cards/card-executor.ts'
@@ -50,8 +56,14 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
   const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null)
   const [activeRecipe, setActiveRecipe] = useState<Recipe>(recipe)
   const [pendingInteraction, setPendingInteraction] = useState<PendingInteraction | null>(null)
+  // Index of the step currently in the pre-run review window (Finding 6)
+  const [reviewingStepIndex, setReviewingStepIndex] = useState<number | null>(null)
   // Ref to hold the latest pending interaction resolve fn so it survives re-renders
   const interactionResolveRef = useRef<((values: Record<string, string>) => void) | null>(null)
+  // Resolved when the user confirms (or 5 s timeout fires) in the review panel
+  const reviewResolveRef = useRef<(() => void) | null>(null)
+  // Set to true by the Stop button; polled by the runner before each step
+  const cancelRef = useRef(false)
   // Ref that always holds the current recipe — updated synchronously in
   // handleConfigSave so the runner sees tweaked configs immediately, without
   // waiting for the async React state update to flush.
@@ -85,9 +97,20 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
     setPendingInteraction(null)
   }, [])
 
+  function handleStop() {
+    cancelRef.current = true
+    // If we're in a review window, dismiss it immediately
+    if (reviewResolveRef.current) {
+      reviewResolveRef.current()
+      reviewResolveRef.current = null
+    }
+    setReviewingStepIndex(null)
+  }
+
   async function handleRun() {
     // Before starting, wipe all prior runs for this recipe — none are worth recovering.
     runStateRepo.clearAll(activeRecipe.name)
+    cancelRef.current = false
     setIsRunning(true)
     setRunState(null)
     setPendingInteraction(null)
@@ -113,15 +136,52 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
       (stepIndex) => {
         const step = activeRecipeRef.current.steps[stepIndex]
         return ('card' in step) ? step.config : null
+      },
+      undefined, // use default executors
+      () => cancelRef.current,
+      // Pre-step review: show the step config to the user for 5 s before running.
+      // Maria can tweak the step or confirm early; the timer auto-advances.
+      (stepIndex) => {
+        return new Promise<void>((resolve) => {
+          reviewResolveRef.current = resolve
+          setReviewingStepIndex(stepIndex)
+          // Auto-advance after 5 s so the recipe doesn't stall if Maria steps away
+          const timer = setTimeout(() => {
+            reviewResolveRef.current = null
+            setReviewingStepIndex(null)
+            resolve()
+          }, 5000)
+          // Store timer id so the "Run this step" button can clear it
+          ;(reviewResolveRef as unknown as { timerId?: ReturnType<typeof setTimeout> }).timerId = timer
+        })
       }
     )
     setRunState(finalState)
     setIsRunning(false)
     setPendingInteraction(null)
+    setReviewingStepIndex(null)
     // Clear once cleanly complete — no recovery needed
     if (finalState.complete) {
       runStateRepo.clearAll(activeRecipe.name)
     }
+    // If cancelled, clear the saved state so it doesn't show as "paused"
+    if (finalState.cancelled) {
+      runStateRepo.clearAll(activeRecipe.name)
+      setRunState(null)
+    }
+  }
+
+  function handleReviewConfirm() {
+    const ref = reviewResolveRef as unknown as { timerId?: ReturnType<typeof setTimeout> }
+    if (ref.timerId) {
+      clearTimeout(ref.timerId)
+      ref.timerId = undefined
+    }
+    if (reviewResolveRef.current) {
+      reviewResolveRef.current()
+      reviewResolveRef.current = null
+    }
+    setReviewingStepIndex(null)
   }
 
   function handleConfigSave(stepIndex: number, newConfig: Record<string, string>) {
@@ -200,9 +260,11 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
         <div className={styles.equipmentCard}>
           <div className={styles.sectionLabel}>Equipment</div>
           {activeRecipe.kitchen.map(name => {
-            const connected = kitchen.equipment.some(
+            const equip = kitchen.equipment.find(
               e => e.name.toLowerCase() === name.toLowerCase() && e.connected
             )
+            const connected = !!equip
+            const isHandoff = equip?.mode === 'handoff'
             return (
               <div key={name} className={styles.equipmentRow}>
                 <div className={styles.equipmentIcon} aria-hidden="true">
@@ -210,9 +272,9 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
                 </div>
                 <span className={styles.equipmentName}>{name}</span>
                 {connected ? (
-                  <span className={styles.equipmentConnected}>
-                    <span className={styles.statusDot} aria-hidden="true" />
-                    Connected
+                  <span className={isHandoff ? styles.equipmentHandoff : styles.equipmentConnected}>
+                    <span className={isHandoff ? styles.statusDotHandoff : styles.statusDot} aria-hidden="true" />
+                    {isHandoff ? 'Ready — sends via you' : 'Connected'}
                   </span>
                 ) : (
                   <button
@@ -229,14 +291,15 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
       )}
 
       {/* Wait step warning */}
-      {hasWaitSteps && !isPaused && (
+      {hasWaitSteps && isRunning && (
         <div className={styles.warningBanner} role="status">
           <strong>Keep this tab open.</strong> This recipe has a Wait step.
           Closing the tab will pause the recipe.
         </div>
       )}
 
-      {/* Recovery banner — shown when we loaded a mid-run state from localStorage */}
+      {/* Recovery banner — shown when we loaded a mid-run state from localStorage.
+          The Run button is hidden while paused to remove ambiguity (Finding 11). */}
       {isPaused && runState && (
         <div className={styles.pausedBanner} role="status">
           <div className={styles.pausedBannerContent}>
@@ -253,11 +316,19 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
                     : 'No steps had finished yet.'
                 })()}
               </span>
+              <span className={styles.pausedDetail}>
+                Resume where you left off, or start over.
+              </span>
             </div>
           </div>
-          <button className={styles.startFreshButton} onClick={handleStartFresh}>
-            Start fresh
-          </button>
+          <div className={styles.pausedActions}>
+            <button className={styles.resumeButton} onClick={handleRun} disabled={!ready}>
+              Resume
+            </button>
+            <button className={styles.startFreshButton} onClick={handleStartFresh}>
+              Start fresh
+            </button>
+          </div>
         </div>
       )}
 
@@ -294,7 +365,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
                     <div className={styles.stepHeader}>
                       <span className={styles.stepName}>{step.name}</span>
                       {isCardStep && (
-                        <span className={styles.cardBadge}>{step.card}</span>
+                        <span className={styles.cardBadge}>{CARD_LABELS[step.card] ?? step.card}</span>
                       )}
                       {'recipe' in step && (
                         <span className={styles.subRecipeBadge}>Sub-recipe — not yet supported</span>
@@ -327,6 +398,30 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
                       </p>
                     )}
 
+                    {/* Pre-step review panel (Finding 6) — shown before each step runs.
+                        Maria can tweak config or confirm early; auto-advances in 5 s. */}
+                    {reviewingStepIndex === i && !isEditing && (
+                      <div className={styles.reviewPanel} role="status">
+                        <span className={styles.reviewText}>
+                          Review this step before it runs, or wait for it to start automatically.
+                        </span>
+                        <div className={styles.reviewActions}>
+                          <button
+                            className={styles.tweakButton}
+                            onClick={() => setEditingStepIndex(i)}
+                          >
+                            Tweak
+                          </button>
+                          <button
+                            className={styles.reviewConfirmButton}
+                            onClick={handleReviewConfirm}
+                          >
+                            Run this step
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Interaction form — shown when a step is waiting for user input */}
                     {pendingInteraction?.stepIndex === i && (
                       <StepInteraction
@@ -353,15 +448,24 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
 
       {/* Run area */}
       <div className={styles.runArea} aria-live="polite">
-        <button
-          className={`${styles.runButton} ${isRunning ? styles.runButtonRunning : ''}`}
-          onClick={handleRun}
-          disabled={!ready || isRunning}
-          aria-label={isRunning ? 'Recipe is running' : 'Run recipe'}
-          aria-busy={isRunning}
-        >
-          {isRunning ? 'Running…' : 'Run recipe'}
-        </button>
+        {isRunning ? (
+          <button
+            className={styles.stopButton}
+            onClick={handleStop}
+            aria-label="Stop recipe"
+          >
+            Stop
+          </button>
+        ) : !isPaused ? (
+          <button
+            className={styles.runButton}
+            onClick={handleRun}
+            disabled={!ready}
+            aria-label="Run recipe"
+          >
+            Run recipe
+          </button>
+        ) : null}
 
         {!ready && !isRunning && (
           <div className={styles.runHint}>

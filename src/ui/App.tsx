@@ -2,7 +2,8 @@ import { useState } from 'react'
 import type { Recipe, SousChefSetup } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import { parseRecipe } from '../parser/recipe-parser.ts'
-import { loadKitchen, saveKitchen, upsertEquipment } from '../kitchen/kitchen-state.ts'
+import { loadKitchen, saveKitchen, upsertEquipment, upsertRecipe } from '../kitchen/kitchen-state.ts'
+import thankYouRecipeMd from '../fixtures/recipes/thank-you-follow-up.recipe.md?raw'
 import { createEquipment } from '../kitchen/equipment.ts'
 import { loadSousChefSetup, saveSousChefSetup, deriveActiveConfig } from './sous-chef-storage.ts'
 import Kitchen from './Kitchen.tsx'
@@ -21,7 +22,19 @@ function getInitialTheme(): 'light' | 'dark' {
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('kitchen')
-  const [kitchen, setKitchen] = useState(loadKitchen)
+  const [kitchen, setKitchen] = useState(() => {
+    const loaded = loadKitchen()
+    // Seed with the starter recipe on first open — Finding 1
+    if (loaded.recipes.length === 0) {
+      const parsed = parseRecipe(thankYouRecipeMd)
+      if (parsed.success) {
+        const seeded = upsertRecipe(loaded, parsed.recipe)
+        saveKitchen(seeded)
+        return seeded
+      }
+    }
+    return loaded
+  })
   const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme)
 
   function toggleTheme() {
@@ -83,7 +96,11 @@ export default function App() {
   function handleEquipmentConnected(config: Record<string, string>) {
     if (!connectingEquipment) return
     const equipment = createEquipment(connectingEquipment, connectingEquipment.toLowerCase())
-    const connected = { ...equipment, connected: true, config }
+    // Equipment in 'compose' mode (e.g. Gmail) hands off to the user's own app
+    // rather than acting autonomously — mark it as 'handoff' so the UI can be
+    // honest about what it can do (Finding 3).
+    const mode: 'full' | 'handoff' = config.mode === 'compose' ? 'handoff' : 'full'
+    const connected = { ...equipment, connected: true, config, mode }
     persistKitchen(upsertEquipment(kitchen, connected))
     setConnectingEquipment(null)
   }
@@ -114,6 +131,11 @@ export default function App() {
           <Kitchen
             kitchen={kitchen}
             onOpenRecipe={handleOpenRecipeFile}
+            onOpenKitchenRecipe={(recipe) => {
+              setRecipeParseErrors([])
+              setActiveRecipe(recipe)
+              setScreen('recipe')
+            }}
             onConnectEquipment={handleConnectEquipment}
             sousChefSetup={sousChefSetup}
             onSousChefSetupChange={handleSousChefSetupChange}

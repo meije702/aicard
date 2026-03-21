@@ -18,6 +18,21 @@ import { waitExecutor } from '../cards/wait.ts'
 import { sendMessageExecutor } from '../cards/send-message.ts'
 import { resolveAllValues } from '../cards/resolve-value.ts'
 
+// Replace {step N: key} references in a config with human-readable placeholders
+// so initial step descriptions never show raw template syntax to the user.
+// e.g. {step 1: customer email} → "the customer email"
+function stripStepRefs(config: CardConfig): CardConfig {
+    const result: CardConfig = {}
+    for (const [k, v] of Object.entries(config)) {
+        if (typeof v === 'string') {
+            result[k] = v.replace(/\{step\s+\d+:\s*([^}]+)\}/gi, (_match, key: string) => `the ${key.trim()}`)
+        } else {
+            result[k] = v
+        }
+    }
+    return result
+}
+
 // Registry of executors keyed by card type. Injected into runRecipe so tests
 // can pass stub executors without touching the production defaults.
 export type ExecutorRegistry = Record<string, CardExecutor>
@@ -56,6 +71,7 @@ export interface RunState {
     steps: StepState[]
     context: RecipeContext
     complete: boolean
+    cancelled?: boolean     // true when the user stopped the run mid-flight
     errors: string[]
 }
 
@@ -74,9 +90,16 @@ export type OnStepInteraction = (
 // recipe's original config for that step.
 export type GetStepConfig = (stepIndex: number) => CardConfig | null
 
+// Callback invoked before each step starts. Resolves when the user confirms
+// (or the review timeout fires) — giving Level 2 users a chance to tweak
+// the step before it executes. Omit for Level 1 / test runs.
+export type OnStepReview = (stepIndex: number) => Promise<void>
+
 // Run a recipe against the kitchen, calling onStateChange after each step.
 // onStepInteraction bridges executor interaction requests to the UI.
 // getStepConfig lets the UI supply live config overrides for pending steps.
+// isCancelled is polled before each step — return true to abort the run.
+// onStepReview is awaited before each step for the pre-step review panel.
 // executors defaults to defaultExecutors — inject a stub map in tests to
 // avoid hitting real card implementations.
 // Returns the final run state.
@@ -86,7 +109,9 @@ export async function runRecipe(
     onStateChange?: OnStateChange,
     onStepInteraction?: OnStepInteraction,
     getStepConfig?: GetStepConfig,
-    executors: ExecutorRegistry = defaultExecutors
+    executors: ExecutorRegistry = defaultExecutors,
+    isCancelled?: () => boolean,
+    onStepReview?: OnStepReview
 ): Promise<RunState> {
     const context: RecipeContext = {}
     const errors: string[] = []
@@ -98,7 +123,7 @@ export async function runRecipe(
             return {
                 number: step.number,
                 name: step.name,
-                description: executor?.describe(step.config) ?? `Step: ${step.name}`,
+                description: executor?.describe(stripStepRefs(step.config)) ?? `Step: ${step.name}`,
                 status: 'pending' as StepStatus,
             }
         }
@@ -134,6 +159,13 @@ export async function runRecipe(
             continue
         }
 
+        // Check for user-requested cancellation before each step
+        if (isCancelled?.()) {
+            state.cancelled = true
+            onStateChange?.({ ...state, steps: [...steps] })
+            break
+        }
+
         const cardStep = recipeStep as CardStep
         const executor = executors[cardStep.card]
 
@@ -147,6 +179,18 @@ export async function runRecipe(
             errors.push(stepState.result.message)
             onStateChange?.({ ...state, steps: [...steps] })
             continue
+        }
+
+        // Give the user a chance to review / tweak the step before it runs.
+        // onStepReview resolves when the user confirms or the timeout fires.
+        if (onStepReview) {
+            await onStepReview(i)
+            // Re-check cancellation after the review window closes
+            if (isCancelled?.()) {
+                state.cancelled = true
+                onStateChange?.({ ...state, steps: [...steps] })
+                break
+            }
         }
 
         // Mark as running
@@ -185,6 +229,12 @@ export async function runRecipe(
             onStateChange?.({ ...state, steps: [...steps] })
             break
         }
+
+        // Update description with resolved values so the UI shows the actual
+        // data (e.g. "Sending a message to customer@example.com...") rather
+        // than the raw config or a step-ref placeholder.
+        stepState.description = executor.describe(resolvedConfig)
+        onStateChange?.({ ...state, steps: [...steps] })
 
         // Build the interaction callback for this step.
         // When the executor calls onInteraction, we update the step state
@@ -229,7 +279,7 @@ export async function runRecipe(
         if (stepState.status === 'failed') break
     }
 
-    state.complete = steps.every(s => s.status === 'complete' || s.status === 'skipped')
+    state.complete = !state.cancelled && steps.every(s => s.status === 'complete' || s.status === 'skipped')
     onStateChange?.({ ...state, steps: [...steps] })
 
     return { ...state, steps: [...steps] }

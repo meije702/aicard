@@ -21,6 +21,9 @@ export interface StepInteractionField {
   defaultValue?: string
   // If true, the field is read-only (display only, not editable)
   readOnly?: boolean
+  // If 'link', the field is rendered as an <a href> the user clicks (e.g. mailto: URL).
+  // This avoids programmatic window.open() calls that trigger popup blockers.
+  type?: 'link'
 }
 
 // Callback an executor calls to request user input mid-execution.
