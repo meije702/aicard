@@ -47,3 +47,10 @@ Feature: Recipe running
     When I run the step with a config override of "how long" set to "1 second"
     Then the recipe should complete successfully
     And the step should complete in under 5 seconds
+
+  Scenario: Sub-recipe step is parsed without error and skipped at runtime
+    Given a recipe with a sub-recipe step named "Notify team" calling "Alert Recipe"
+    And a kitchen with no equipment
+    When I run the recipe
+    Then the recipe should complete successfully
+    And the sub-recipe step should have status "skipped"

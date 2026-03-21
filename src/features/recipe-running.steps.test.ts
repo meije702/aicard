@@ -171,6 +171,28 @@ Then('the step should complete in under 5 seconds', (world: World) => {
   assertEquals(elapsed < 5000, true, `Expected completion in under 5s, took ${elapsed}ms`)
 })
 
+// --- Sub-recipe: parsed without error, skipped at runtime ---
+
+Given('a recipe with a sub-recipe step named {string} calling {string}',
+  (world: World, stepName: string, recipeName: string) => {
+    world.recipe = RecipeBuilder.named('Test')
+      .withSubRecipeStep(stepName, recipeName)
+      .build()
+  }
+)
+
+When('I run the recipe', async (world: World) => {
+  assertExists(world.recipe)
+  world.runState = await runRecipe(world.recipe, world.kitchen)
+})
+
+Then('the sub-recipe step should have status {string}', (world: World, expectedStatus: string) => {
+  assertExists(world.runState)
+  const step = world.runState.steps[0]
+  assertExists(step)
+  assertEquals(step.status, expectedStatus)
+})
+
 // Run the feature file
 runFeature(new URL('./recipe-running.feature', import.meta.url).href)
 

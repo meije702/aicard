@@ -227,16 +227,11 @@ function parseStepBlock(block: string[], lineNumber: number): ParseResult<Recipe
 
     const recipeMatch = line.match(/^\*Recipe:\s+(.+)\*$/)
     if (recipeMatch) {
-      // Sub-recipes are parsed correctly but not supported in v1.
-      // Flag at parse time so the user sees it before they try to run.
+      // Sub-recipes are parsed correctly but not yet supported at runtime.
+      // The step is included in the recipe as a SubRecipeStep so the recipe
+      // loads and runs — the runner will mark it 'skipped' when it reaches it.
       const step: SubRecipeStep = { number, name, recipe: recipeMatch[1].trim() }
-      return {
-        value: step,
-        errors: [
-          `Step "${name}" uses a sub-recipe ("${recipeMatch[1].trim()}"), which is not yet supported. ` +
-          `This step will be skipped when the recipe runs.`,
-        ],
-      }
+      return { value: step, errors: [] }
     }
   }
 

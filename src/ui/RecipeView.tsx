@@ -278,7 +278,10 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
                 style={{ animationDelay: `${i * 60}ms` }}
                 aria-label={`Step ${step.number}: ${step.name}, ${status}`}
               >
-                <div className={stepCardClass(status)}>
+                <div
+                  className={stepCardClass(status)}
+                  data-card-type={isCardStep ? step.card : undefined}
+                >
                   {/* Step number */}
                   <div
                     className={`${styles.stepNumber} ${stepNumberClass(status)}`}
@@ -292,6 +295,9 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
                       <span className={styles.stepName}>{step.name}</span>
                       {isCardStep && (
                         <span className={styles.cardBadge}>{step.card}</span>
+                      )}
+                      {'recipe' in step && (
+                        <span className={styles.subRecipeBadge}>Sub-recipe — not yet supported</span>
                       )}
                       {/* Tweak button — visible for pending steps (even mid-run)
                           and for any step when no run is active. Hidden while

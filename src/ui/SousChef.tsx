@@ -9,6 +9,7 @@ import type { Recipe, Kitchen as KitchenType, SousChefConfig } from '../types.ts
 import type { RunState } from '../runner/recipe-runner.ts'
 import { createSousChef } from '../sous-chef/sous-chef.ts'
 import { getProvider } from '../sous-chef/providers.ts'
+import { checkRecipeReadiness } from '../runner/recipe-readiness.ts'
 import styles from './SousChef.module.css'
 
 interface Props {
@@ -118,6 +119,30 @@ export default function SousChef({ sousChefConfig, recipe, kitchen, runState: ex
       firstFocusable?.focus()
     }
   }, [hatState])
+
+  // Proactively notify Maria when a recipe loads with missing equipment —
+  // the sous chef taps her on the shoulder so she knows before hitting "Run".
+  const prevRecipeNameRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!recipe) {
+      prevRecipeNameRef.current = null
+      return
+    }
+    // Only fire once per recipe (guard against re-renders)
+    if (recipe.name === prevRecipeNameRef.current) return
+    prevRecipeNameRef.current = recipe.name
+
+    const { blockers } = checkRecipeReadiness(recipe, kitchen)
+    const equipmentBlockers = blockers.filter(b => b.kind === 'equipment')
+    if (equipmentBlockers.length === 0) return
+
+    const names = equipmentBlockers.map(b => b.label)
+    const list = names.length === 1
+      ? names[0]
+      : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]
+    addToast(`This recipe needs ${list}. Connect it in Your Kitchen before running.`, 'info')
+  // kitchen intentionally excluded — only fires once per recipe load, not on every equipment update
+  }, [recipe])
 
   async function handleOpenHat() {
     if (hatState !== 'closed') {

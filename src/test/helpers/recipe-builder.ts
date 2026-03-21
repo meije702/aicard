@@ -1,12 +1,12 @@
 // Builder for creating Recipe objects in tests without parsing Markdown.
 
-import type { Recipe, CardStep, CardType, CardConfig } from '../../types.ts'
+import type { Recipe, SubRecipeStep, RecipeStep, CardType, CardConfig } from '../../types.ts'
 
 export class RecipeBuilder {
   private name = 'Test Recipe'
   private purpose = 'A test recipe.'
   private kitchen: string[] = []
-  private steps: CardStep[] = []
+  private steps: RecipeStep[] = []
 
   static named(name: string): RecipeBuilder {
     const builder = new RecipeBuilder()
@@ -31,6 +31,16 @@ export class RecipeBuilder {
       card,
       config,
     })
+    return this
+  }
+
+  withSubRecipeStep(name: string, recipeName: string): RecipeBuilder {
+    const step: SubRecipeStep = {
+      number: this.steps.length + 1,
+      name,
+      recipe: recipeName,
+    }
+    this.steps.push(step)
     return this
   }
 

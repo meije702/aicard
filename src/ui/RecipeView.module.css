@@ -396,7 +396,7 @@
   color: var(--text-primary);
 }
 
-/* Card type pill badge */
+/* Card type pill badge — base style; card-type tints applied via data-card-type below */
 .cardBadge {
   display: inline-flex;
   align-items: center;
@@ -406,6 +406,44 @@
   background: var(--surface-lightest);
   border-radius: var(--radius-full);
   padding: 2px var(--space-2);
+}
+
+/* Card type color tints — applied when the step card has a data-card-type attribute */
+[data-card-type="listen"] .cardBadge {
+  background: color-mix(in srgb, var(--card-color-listen) 15%, transparent);
+  color: var(--card-color-listen);
+}
+[data-card-type="wait"] .cardBadge {
+  background: color-mix(in srgb, var(--card-color-wait) 15%, transparent);
+  color: var(--card-color-wait);
+}
+[data-card-type="send-message"] .cardBadge {
+  background: color-mix(in srgb, var(--card-color-send-message) 15%, transparent);
+  color: var(--card-color-send-message);
+}
+
+/* Subtle left-edge tint for pending steps — a visual hint of card type even before running */
+[data-card-type="listen"].stepCard {
+  border-left: 2px solid color-mix(in srgb, var(--card-color-listen) 35%, transparent);
+}
+[data-card-type="wait"].stepCard {
+  border-left: 2px solid color-mix(in srgb, var(--card-color-wait) 35%, transparent);
+}
+[data-card-type="send-message"].stepCard {
+  border-left: 2px solid color-mix(in srgb, var(--card-color-send-message) 35%, transparent);
+}
+
+/* Sub-recipe badge */
+.subRecipeBadge {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-tertiary);
+  background: var(--surface-mid);
+  border-radius: var(--radius-full);
+  padding: 2px var(--space-2);
+  font-style: italic;
 }
 
 .stepDescription {
