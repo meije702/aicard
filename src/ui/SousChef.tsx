@@ -35,6 +35,9 @@ function sousChefErrorMessage(err: unknown): string {
   if (status === 401 || msg.includes('401')) {
     return "Your API key doesn't look right. Double-check it at console.anthropic.com and try again."
   }
+  if (msg.toLowerCase().includes('credit balance') || msg.toLowerCase().includes('billing')) {
+    return "Your Anthropic account has no API credits. Add some at console.anthropic.com → Plans & Billing (a few dollars is enough to start)."
+  }
   if (status === 403 || msg.includes('403')) {
     return "Your API key doesn't have access to this model. Check your plan at console.anthropic.com."
   }
