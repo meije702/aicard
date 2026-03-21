@@ -24,3 +24,26 @@ Feature: Recipe running
   Scenario: Detect no wait steps when absent
     Given a recipe with a "listen" step
     Then the recipe should not have wait steps
+
+  Scenario: Listen card pauses and collects event data from the user
+    Given a Listen step listening for "new order" from "Shopify"
+    And a kitchen with connected "Shopify"
+    When I run the step with the user entering "customer email" as "maria@shop.com" and "order number" as "#1042"
+    Then the step should succeed
+    And the step output should include "customer email" with value "maria@shop.com"
+    And the step output should include "order number" with value "#1042"
+
+  Scenario: Send Message composes an email and hands it off
+    Given a Send Message step to "maria@shop.com" with subject "Thank you" and message "We appreciate your order"
+    And a kitchen with connected "Gmail"
+    When I run the step in headless mode
+    Then the step should succeed
+    And the step result should say "Opened" not "sent"
+    And the step output should include "to" with value "maria@shop.com"
+
+  Scenario: Config override takes effect when step runs
+    Given a Wait step configured for "999 days"
+    And a kitchen with no equipment
+    When I run the step with a config override of "how long" set to "1 second"
+    Then the recipe should complete successfully
+    And the step should complete in under 5 seconds

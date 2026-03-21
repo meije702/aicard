@@ -24,4 +24,7 @@ export class World {
   runState: RunState | null = null
   cardResult: CardResult | null = null
   error: Error | null = null
+
+  // Timing
+  startedAt: number | null = null
 }

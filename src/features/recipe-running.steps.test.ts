@@ -81,6 +81,95 @@ Then('the recipe should not have wait steps', (world: World) => {
   assertEquals(recipeHasWaitSteps(world.recipe), false)
 })
 
+// --- Level 1: Listen card manual confirmation ---
+
+import { listenExecutor } from '../cards/listen.ts'
+import { sendMessageExecutor } from '../cards/send-message.ts'
+
+Given('a Listen step listening for {string} from {string}', (world: World, event: string, source: string) => {
+  world.recipe = RecipeBuilder.named('Test')
+    .withEquipment(source)
+    .withStep('Listen', 'listen', { 'listen for': event, from: source })
+    .build()
+})
+
+When('I run the step with the user entering {string} as {string} and {string} as {string}',
+  async (world: World, field1: string, value1: string, field2: string, value2: string) => {
+    world.cardResult = await listenExecutor.execute(
+      { 'listen for': 'new order', from: 'Shopify' },
+      {},
+      world.kitchen,
+      async () => ({ [field1]: value1, [field2]: value2 })
+    )
+  }
+)
+
+// --- Level 1: Send Message compose-and-hand-off ---
+
+Given('a Send Message step to {string} with subject {string} and message {string}',
+  (world: World, to: string, subject: string, message: string) => {
+    world.recipe = RecipeBuilder.named('Test')
+      .withStep('Send', 'send-message', { to, subject, message })
+      .build()
+  }
+)
+
+When('I run the step in headless mode', async (world: World) => {
+  const step = world.recipe?.steps[0]
+  if (!step || !('card' in step)) return
+  world.cardResult = await sendMessageExecutor.execute(step.config, {}, world.kitchen)
+})
+
+Then('the step should succeed', (world: World) => {
+  assertExists(world.cardResult)
+  assertEquals(world.cardResult.success, true)
+})
+
+Then('the step result should say {string} not {string}', (world: World, present: string, absent: string) => {
+  assertExists(world.cardResult)
+  assertEquals(world.cardResult.message.includes(present), true, `Expected message to include "${present}"`)
+  assertEquals(world.cardResult.message.toLowerCase().includes(absent.toLowerCase()), false, `Expected message not to include "${absent}"`)
+})
+
+Then('the step output should include {string} with value {string}', (world: World, key: string, value: string) => {
+  assertExists(world.cardResult)
+  assertEquals(world.cardResult.output[key], value)
+})
+
+// --- Level 2: config override at runtime ---
+
+Given('a Wait step configured for {string}', (world: World, duration: string) => {
+  world.recipe = RecipeBuilder.named('Test')
+    .withStep('Wait', 'wait', { 'how long': duration })
+    .build()
+})
+
+When('I run the step with a config override of {string} set to {string}',
+  async (world: World, key: string, value: string) => {
+    assertExists(world.recipe)
+    world.startedAt = Date.now()
+    const finalState = await runRecipe(
+      world.recipe,
+      world.kitchen,
+      undefined,
+      undefined,
+      () => ({ [key]: value })
+    )
+    world.runState = finalState
+  }
+)
+
+Then('the recipe should complete successfully', (world: World) => {
+  assertExists(world.runState)
+  assertEquals(world.runState.complete, true)
+})
+
+Then('the step should complete in under 5 seconds', (world: World) => {
+  assertExists(world.startedAt)
+  const elapsed = Date.now() - world.startedAt
+  assertEquals(elapsed < 5000, true, `Expected completion in under 5s, took ${elapsed}ms`)
+})
+
 // Run the feature file
 runFeature(new URL('./recipe-running.feature', import.meta.url).href)
 
