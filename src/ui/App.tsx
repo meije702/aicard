@@ -42,12 +42,13 @@ export default function App() {
   // TRADE-OFF: localStorage is not encrypted. We treat the key like any
   // browser-saved credential — good enough for v1, not a vault.
   const API_KEY_STORAGE_KEY = 'aicard:api-key'
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE_KEY) ?? '')
+  const [apiKey, setApiKey] = useState(() => (localStorage.getItem(API_KEY_STORAGE_KEY) ?? '').trim())
 
   function handleSetApiKey(key: string) {
-    setApiKey(key)
-    if (key) {
-      localStorage.setItem(API_KEY_STORAGE_KEY, key)
+    const trimmed = key.trim()
+    setApiKey(trimmed)
+    if (trimmed) {
+      localStorage.setItem(API_KEY_STORAGE_KEY, trimmed)
     } else {
       localStorage.removeItem(API_KEY_STORAGE_KEY)
     }
