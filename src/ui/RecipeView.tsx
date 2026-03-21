@@ -12,7 +12,7 @@ const CARD_LABELS: Record<string, string> = {
 import type { Recipe, Kitchen as KitchenType } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import type { StepInteraction as StepInteractionType } from '../cards/card-executor.ts'
-import { runRecipe } from '../runner/recipe-runner.ts'
+import { runRecipe, defaultExecutors } from '../runner/recipe-runner.ts'
 import { checkRecipeReadiness, recipeHasWaitSteps } from '../runner/recipe-readiness.ts'
 import {
   localStorageRunStateRepository as runStateRepo,
@@ -68,6 +68,11 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
   // handleConfigSave so the runner sees tweaked configs immediately, without
   // waiting for the async React state update to flush.
   const activeRecipeRef = useRef<typeof activeRecipe>(activeRecipe)
+  // Tracks descriptions Maria has seen after tweaking pending steps. The runner's
+  // onStateChange overwrites React state on every step transition; this ref lets us
+  // re-apply the tweaked description so it stays visible until the step starts running
+  // (at which point the runner itself calls describe(liveConfig) and owns the description).
+  const tweakedDescriptionsRef = useRef<Record<number, string>>({})
 
   // A run is "paused" if we have a saved state that wasn't completed cleanly.
   const isPaused = runState !== null && !runState.complete && !isRunning
@@ -111,6 +116,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
     // Before starting, wipe all prior runs for this recipe — none are worth recovering.
     runStateRepo.clearAll(activeRecipe.name)
     cancelRef.current = false
+    tweakedDescriptionsRef.current = {}
     setIsRunning(true)
     setRunState(null)
     setPendingInteraction(null)
@@ -119,8 +125,20 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
       activeRecipe,
       kitchen,
       (state) => {
-        setRunState({ ...state })
-        // Persist after every step so a tab close doesn't lose progress
+        // Merge tweaked descriptions for pending steps so they survive the runner's
+        // onStateChange calls, which always push the runner's internal description
+        // (still the original value until the step transitions to running).
+        const overrides = tweakedDescriptionsRef.current
+        const mergedSteps = state.steps.map((s, i) => {
+          if (s.status !== 'pending') {
+            // Step is no longer pending — runner now owns the description; clear override
+            delete overrides[i]
+            return s
+          }
+          return overrides[i] ? { ...s, description: overrides[i] } : s
+        })
+        setRunState({ ...state, steps: mergedSteps })
+        // Persist the authoritative runner state (without UI overrides)
         runStateRepo.save(state)
       },
       // Interaction callback: when an executor needs user input, we surface
@@ -195,7 +213,38 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
     // before React's async state update has flushed.
     activeRecipeRef.current = updatedRecipe
     setActiveRecipe(updatedRecipe)
+
+    // Finding 1: update the pending step's description immediately so Maria
+    // sees "Waiting 5 days…" right after saving — not only when the step runs.
+    // Also persist to tweakedDescriptionsRef so the onStateChange merger keeps
+    // it visible even when the runner pushes subsequent state updates.
+    const step = activeRecipe.steps[stepIndex]
+    if (runState && 'card' in step) {
+      const freshDescription = defaultExecutors[step.card]?.describe(newConfig) ?? step.card
+      tweakedDescriptionsRef.current[stepIndex] = freshDescription
+      setRunState(prev => {
+        if (!prev) return prev
+        const steps = [...prev.steps]
+        steps[stepIndex] = { ...steps[stepIndex], description: freshDescription }
+        return { ...prev, steps }
+      })
+    }
+
     setEditingStepIndex(null)
+    // Finding 2: if this tweak was opened from the pre-step review panel,
+    // advance past it now — the user has made their decision.
+    if (reviewingStepIndex === stepIndex) {
+      handleReviewConfirm()
+    }
+  }
+
+  function handleConfigCancel(stepIndex: number) {
+    setEditingStepIndex(null)
+    // Finding 2: if cancel came from inside the review panel, advance past it
+    // too — the user decided not to tweak, so let the step proceed.
+    if (reviewingStepIndex === stepIndex) {
+      handleReviewConfirm()
+    }
   }
 
   function stepNumberClass(status: string): string {
@@ -408,7 +457,16 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
                         <div className={styles.reviewActions}>
                           <button
                             className={styles.tweakButton}
-                            onClick={() => setEditingStepIndex(i)}
+                            onClick={() => {
+                              // Finding 2: clear the auto-advance timer so it doesn't
+                              // fire and override her changes while she's editing.
+                              const ref = reviewResolveRef as unknown as { timerId?: ReturnType<typeof setTimeout> }
+                              if (ref.timerId !== undefined) {
+                                clearTimeout(ref.timerId)
+                                ref.timerId = undefined
+                              }
+                              setEditingStepIndex(i)
+                            }}
                           >
                             Tweak
                           </button>
@@ -435,7 +493,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
                       <CardConfig
                         step={step}
                         onSave={config => handleConfigSave(i, config)}
-                        onCancel={() => setEditingStepIndex(null)}
+                        onCancel={() => handleConfigCancel(i)}
                       />
                     )}
                   </div>

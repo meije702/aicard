@@ -193,6 +193,31 @@ Then('the sub-recipe step should have status {string}', (world: World, expectedS
   assertEquals(step.status, expectedStatus)
 })
 
+Then('the step description should include {string}', (world: World, text: string) => {
+  assertExists(world.runState)
+  const description = world.runState.steps[0]?.description ?? ''
+  assertEquals(
+    description.includes(text), true,
+    `Expected step description to include "${text}", got: "${description}"`
+  )
+})
+
+Then('the step should have status {string}', (world: World, expectedStatus: string) => {
+  assertExists(world.runState)
+  const step = world.runState.steps[0]
+  assertExists(step)
+  assertEquals(step.status, expectedStatus)
+})
+
+Then('the step result should include {string}', (world: World, text: string) => {
+  assertExists(world.runState)
+  const message = world.runState.steps[0]?.result?.message ?? ''
+  assertEquals(
+    message.includes(text), true,
+    `Expected step result to include "${text}", got: "${message}"`
+  )
+})
+
 // Run the feature file
 runFeature(new URL('./recipe-running.feature', import.meta.url).href)
 

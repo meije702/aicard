@@ -54,3 +54,17 @@ Feature: Recipe running
     When I run the recipe
     Then the recipe should complete successfully
     And the sub-recipe step should have status "skipped"
+
+  Scenario: Step description reflects tweaked config at runtime
+    Given a Wait step configured for "999 days"
+    And a kitchen with no equipment
+    When I run the step with a config override of "how long" set to "2 seconds"
+    Then the recipe should complete successfully
+    And the step description should include "2 seconds"
+
+  Scenario: Invalid wait duration fails with a user-facing message
+    Given a Wait step configured for "five days"
+    And a kitchen with no equipment
+    When I run the recipe
+    Then the step should have status "failed"
+    And the step result should include "Couldn't understand"
