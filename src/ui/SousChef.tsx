@@ -31,16 +31,23 @@ let toastCounter = 0
 // Map API errors to Maria-friendly messages.
 function sousChefErrorMessage(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err)
-  if (msg.includes('401') || msg.includes('invalid') || msg.includes('auth')) {
+  const status = (err as Record<string, unknown>)?.status as number | undefined
+  if (status === 401 || msg.includes('401')) {
     return "Your API key doesn't look right. Double-check it at console.anthropic.com and try again."
   }
-  if (msg.includes('429') || msg.includes('rate')) {
+  if (status === 403 || msg.includes('403')) {
+    return "Your API key doesn't have access to this model. Check your plan at console.anthropic.com."
+  }
+  if (status === 404 || msg.includes('404') || msg.toLowerCase().includes('not found')) {
+    return "The sous chef model isn't available on your account. Check your plan at console.anthropic.com."
+  }
+  if (status === 429 || msg.includes('429') || msg.includes('rate')) {
     return "The sous chef is a bit busy right now. Wait a moment and try again."
   }
-  if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) {
+  if (msg.includes('fetch') || msg.includes('network') || msg.toLowerCase().includes('failed to fetch')) {
     return "Can't reach the sous chef — check your internet connection and try again."
   }
-  return "I couldn't reach the sous chef right now. Check your API key and try again."
+  return `I couldn't reach the sous chef. Error: ${msg}`
 }
 
 function LoadingDots() {
