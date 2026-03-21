@@ -1,6 +1,18 @@
 // Domain types for AICard. Variable names and type names reflect the domain vocabulary.
 // See docs/AICard_Domain_Language.md for definitions.
 
+// --- Sous chef provider config ---
+
+export type SousChefProviderId = 'anthropic' | 'openai' | 'gemini' | 'mistral' | 'ollama'
+
+export interface SousChefConfig {
+  provider: SousChefProviderId
+  apiKey: string       // empty string for Ollama (no key required)
+  baseUrl?: string     // override — used for Ollama (http://localhost:11434)
+}
+
+// --- Recipe and kitchen types ---
+
 export type CardType = 'listen' | 'wait' | 'send-message'
 
 export type CardConfig = Record<string, string>

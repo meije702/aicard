@@ -1,16 +1,17 @@
 // The main kitchen view — Maria's first impression.
 // This needs to feel warm, inviting, and clear — not like a settings panel.
 
-import type { Kitchen as KitchenType } from '../types.ts'
+import type { Kitchen as KitchenType, SousChefConfig } from '../types.ts'
+import { getProvider } from '../sous-chef/providers.ts'
 import styles from './Kitchen.module.css'
 
 interface Props {
   kitchen: KitchenType
   onOpenRecipe: () => void
   onConnectEquipment: (name: string) => void
-  apiKey: string
-  onSetApiKey: (key: string) => void
-  onClearApiKey: () => void
+  sousChefConfig: SousChefConfig | null
+  onConnectSousChef: () => void
+  onClearSousChef: () => void
 }
 
 // Map equipment names to friendly icons
@@ -25,9 +26,16 @@ function equipmentIcon(name: string): string {
   return '🔌'
 }
 
-export default function Kitchen({ kitchen, onOpenRecipe, apiKey, onSetApiKey, onClearApiKey }: Props) {
+export default function Kitchen({ kitchen, onOpenRecipe, sousChefConfig, onConnectSousChef, onClearSousChef }: Props) {
   const connectedEquipment = kitchen.equipment.filter(e => e.connected)
-  const hasApiKey = apiKey.trim().length > 0
+  const isConnected = sousChefConfig !== null
+  const provider = isConnected ? getProvider(sousChefConfig.provider) : null
+
+  // Mask the key: show first 8 chars + bullets
+  function maskedKey(key: string): string {
+    if (!key) return ''
+    return key.slice(0, 8) + '•'.repeat(8)
+  }
 
   return (
     <div className={styles.container}>
@@ -39,58 +47,53 @@ export default function Kitchen({ kitchen, onOpenRecipe, apiKey, onSetApiKey, on
         </p>
       </div>
 
-      {/* Sous Chef — API key setup */}
+      {/* Sous Chef — provider setup */}
       <section className={styles.sectionCard} aria-label="Sous Chef configuration">
         <div className={styles.sectionLabel}>Sous Chef</div>
         <div className={styles.apiKeyRow}>
           <div className={styles.apiKeyIcon} aria-hidden="true">🧑‍🍳</div>
           <div className={styles.apiKeyContent}>
             <div className={styles.apiKeyLabel}>
-              {hasApiKey ? 'Sous chef is ready to help' : 'Connect your sous chef'}
+              {isConnected ? `Connected to ${provider!.label}` : 'Connect your sous chef'}
             </div>
             <div className={styles.apiKeyHint}>
-              Your key stays in your browser — never sent anywhere else.
+              {isConnected
+                ? 'Your key stays in your browser — never sent anywhere else.'
+                : 'Choose an AI to power the sous chef. Anthropic, OpenAI, Gemini, Mistral, or a local model.'}
             </div>
           </div>
         </div>
 
-        {hasApiKey ? (
+        {isConnected ? (
           <div className={styles.apiKeyConfigured}>
-            <span className={styles.checkIcon} aria-hidden="true">✓</span>
+            <span className={styles.providerBadge} aria-hidden="true">{provider!.emoji}</span>
             <span className={styles.apiKeyMasked}>
-              {apiKey.slice(0, 10)}{'•'.repeat(8)}
+              {sousChefConfig!.provider === 'ollama'
+                ? (sousChefConfig!.baseUrl ?? 'http://localhost:11434')
+                : maskedKey(sousChefConfig!.apiKey)}
             </span>
             <button
               className={styles.clearKeyButton}
-              onClick={onClearApiKey}
-              aria-label="Remove API key"
+              onClick={onConnectSousChef}
+              aria-label="Change AI provider"
+            >
+              Change
+            </button>
+            <button
+              className={styles.clearKeyButton}
+              onClick={onClearSousChef}
+              aria-label="Disconnect sous chef"
             >
               Remove
             </button>
           </div>
         ) : (
-          <>
-            <input
-              type="password"
-              className={styles.apiKeyInput}
-              placeholder="sk-ant-..."
-              value={apiKey}
-              onChange={e => onSetApiKey(e.target.value)}
-              aria-label="Anthropic API key"
-            />
-            <p className={styles.apiKeyHint} style={{ marginTop: 'var(--space-2)' }}>
-              Don't have a key?{' '}
-              <a
-                href="https://console.anthropic.com/settings/keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.apiKeyLink}
-              >
-                Get one at console.anthropic.com
-              </a>
-              {' '}— it's free to start.
-            </p>
-          </>
+          <button
+            className={styles.connectProviderButton}
+            onClick={onConnectSousChef}
+          >
+            Choose a provider →
+          </button>
         )}
       </section>
 

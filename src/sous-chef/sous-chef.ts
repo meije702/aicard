@@ -5,20 +5,18 @@
 //
 // The sous chef speaks recipe language. Never technical language.
 
-import Anthropic from '@anthropic-ai/sdk'
-import type { Recipe, Kitchen } from '../types.ts'
+import type { Recipe, Kitchen, SousChefConfig } from '../types.ts'
 import { checkRecipeReadiness, recipeHasWaitSteps } from '../runner/recipe-runner.ts'
 import {
   SOUS_CHEF_SYSTEM_PROMPT,
   buildReadinessContext,
   buildStepContext,
 } from './prompts.ts'
+import { sousChefAsk } from './client.ts'
 
-// The sous chef needs an API key to run.
+// The sous chef needs a provider config to run.
 // In v1 this is passed in from the UI — no backend required.
-export function createSousChef(apiKey: string) {
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
-
+export function createSousChef(config: SousChefConfig) {
   return {
     // Check whether the kitchen is ready to run the recipe.
     // Returns a plain-English description of what is ready and what is missing.
@@ -51,18 +49,18 @@ export function createSousChef(apiKey: string) {
         prompt = `The kitchen is missing some equipment. Tell the user what is missing and what they need to do to get ready.\n\n${context}`
       }
 
-      return await ask(client, prompt)
+      return await ask(config, prompt)
     },
 
     // Describe what a specific step is doing in plain English.
     async describeStep(
       stepName: string,
       cardType: string,
-      config: Record<string, string>
+      cardConfig: Record<string, string>
     ): Promise<string> {
-      const context = buildStepContext(stepName, cardType, config)
+      const context = buildStepContext(stepName, cardType, cardConfig)
       const prompt = `Describe what this recipe step is doing in one friendly sentence. Use recipe language.\n\n${context}`
-      return await ask(client, prompt)
+      return await ask(config, prompt)
     },
 
     // Generate contextual options for the chef's hat menu.
@@ -103,7 +101,7 @@ ${context}
 Respond with ONLY a JSON object in this exact format, no other text:
 {"options": ["option one", "option two", "option three"]}`
 
-      const response = await ask(client, prompt)
+      const response = await ask(config, prompt)
 
       try {
         const parsed = JSON.parse(response) as { options: string[] }
@@ -129,21 +127,12 @@ Respond with ONLY a JSON object in this exact format, no other text:
       const context = [kitchenContext, hasWaitWarning].filter(Boolean).join(' ')
       const prompt = `${context}\n\nUser question: ${question}`
 
-      return await ask(client, prompt)
+      return await ask(config, prompt)
     },
   }
 }
 
-// Make a single request to the sous chef model.
-async function ask(client: Anthropic, userMessage: string): Promise<string> {
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
-    system: SOUS_CHEF_SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userMessage }],
-  })
-
-  const block = response.content[0]
-  if (block.type === 'text') return block.text
-  return ''
+// Internal helper: make a single request via the selected provider.
+async function ask(config: SousChefConfig, userMessage: string): Promise<string> {
+  return sousChefAsk(config, SOUS_CHEF_SYSTEM_PROMPT, userMessage)
 }

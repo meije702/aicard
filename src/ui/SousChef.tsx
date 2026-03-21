@@ -5,13 +5,14 @@
 // The panel uses glass morphism with spring animations.
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import type { Recipe, Kitchen as KitchenType } from '../types.ts'
+import type { Recipe, Kitchen as KitchenType, SousChefConfig } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import { createSousChef } from '../sous-chef/sous-chef.ts'
+import { getProvider } from '../sous-chef/providers.ts'
 import styles from './SousChef.module.css'
 
 interface Props {
-  apiKey: string
+  sousChefConfig: SousChefConfig | null
   recipe: Recipe | null
   kitchen: KitchenType
   runState?: RunState | null
@@ -39,20 +40,23 @@ interface SousChefError {
 // Map API errors to Maria-friendly messages.
 // "blocking" errors need a toast — they won't resolve without user action.
 // "transient" errors can live in the panel — retrying may fix them.
-function sousChefError(err: unknown): SousChefError {
+function sousChefError(err: unknown, config: SousChefConfig | null): SousChefError {
   const msg = err instanceof Error ? err.message : String(err)
   const status = (err as Record<string, unknown>)?.status as number | undefined
+  const providerLabel = config ? getProvider(config.provider).label : 'your AI provider'
+  const keyLink = config ? getProvider(config.provider).keyLink : ''
+
   if (msg.toLowerCase().includes('credit balance') || msg.toLowerCase().includes('billing')) {
-    return { severity: 'blocking', message: "Your Anthropic account has no API credits. Add some at console.anthropic.com → Plans & Billing (a few dollars is enough to start)." }
+    return { severity: 'blocking', message: `Your ${providerLabel} account has no credits. Add some at ${keyLink.replace('https://', '')} to continue.` }
   }
   if (status === 401 || msg.includes('401')) {
-    return { severity: 'blocking', message: "Your API key doesn't look right. Remove it from Your Kitchen and add the correct one from console.anthropic.com/settings/keys." }
+    return { severity: 'blocking', message: `Your ${providerLabel} API key doesn't look right. Remove it in Your Kitchen and add the correct one.` }
   }
   if (status === 403 || msg.includes('403')) {
-    return { severity: 'blocking', message: "Your API key doesn't have permission to use this model. Check your plan at console.anthropic.com." }
+    return { severity: 'blocking', message: `Your ${providerLabel} key doesn't have permission to use this model. Check your plan.` }
   }
   if (status === 404 || msg.includes('404') || msg.toLowerCase().includes('not found')) {
-    return { severity: 'blocking', message: "The sous chef model isn't available on your account. Check your plan at console.anthropic.com." }
+    return { severity: 'blocking', message: `The sous chef model isn't available on your ${providerLabel} account. Check your plan.` }
   }
   if (status === 429 || msg.includes('429') || msg.includes('rate')) {
     return { severity: 'transient', message: "The sous chef is a bit busy right now. Wait a moment and try again." }
@@ -73,7 +77,7 @@ function LoadingDots() {
   )
 }
 
-export default function SousChef({ apiKey, recipe, kitchen, runState: externalRunState }: Props) {
+export default function SousChef({ sousChefConfig, recipe, kitchen, runState: externalRunState }: Props) {
   const [hatState, setHatState] = useState<HatState>('closed')
   const [options, setOptions] = useState<string[]>([])
   const [loadingOptions, setLoadingOptions] = useState(false)
@@ -116,8 +120,8 @@ export default function SousChef({ apiKey, recipe, kitchen, runState: externalRu
       return
     }
 
-    if (!apiKey) {
-      setOptions(['Add an Anthropic API key in your kitchen to use the sous chef'])
+    if (!sousChefConfig) {
+      setOptions(['Connect a sous chef in Your Kitchen to get help here'])
       setHatState('options')
       return
     }
@@ -126,7 +130,7 @@ export default function SousChef({ apiKey, recipe, kitchen, runState: externalRu
     setLoadingOptions(true)
 
     try {
-      const sousChef = createSousChef(apiKey)
+      const sousChef = createSousChef(sousChefConfig)
       // Pass the current step name from run state so the sous chef can give
       // contextual suggestions (e.g., "Your Shopify connection is missing")
       const currentStep = externalRunState?.steps.find(s => s.status === 'running')
@@ -135,7 +139,7 @@ export default function SousChef({ apiKey, recipe, kitchen, runState: externalRu
       setOptions(opts)
     } catch (err) {
       console.error('[sous chef] getHatOptions failed:', err)
-      const { message, severity } = sousChefError(err)
+      const { message, severity } = sousChefError(err, sousChefConfig)
       if (severity === 'blocking') {
         addToast(message, 'error')
         setHatState('closed')
@@ -163,17 +167,17 @@ export default function SousChef({ apiKey, recipe, kitchen, runState: externalRu
   }
 
   const handleAsk = useCallback(async (q: string = question) => {
-    if (!q.trim() || !apiKey) return
+    if (!q.trim() || !sousChefConfig) return
     setLoadingAnswer(true)
     setAnswer('')
 
     try {
-      const sousChef = createSousChef(apiKey)
+      const sousChef = createSousChef(sousChefConfig)
       const response = await sousChef.ask(q, recipe, kitchen)
       setAnswer(response)
     } catch (err) {
       console.error('[sous chef] ask failed:', err)
-      const { message, severity } = sousChefError(err)
+      const { message, severity } = sousChefError(err, sousChefConfig)
       if (severity === 'blocking') {
         addToast(message, 'error')
         setHatState('closed')
@@ -183,7 +187,7 @@ export default function SousChef({ apiKey, recipe, kitchen, runState: externalRu
     } finally {
       setLoadingAnswer(false)
     }
-  }, [apiKey, kitchen, question, recipe])
+  }, [sousChefConfig, kitchen, question, recipe])
 
   function addToast(message: string, type: Toast['type'] = 'info') {
     const id = ++toastCounter
