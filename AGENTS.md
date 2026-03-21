@@ -76,7 +76,7 @@ Before adding any feature, ask: **"Does Level 1 work yet?"** If not, build that 
 - **Frontend**: React + TypeScript, bundled by Vite, runs entirely in the browser
 - **Distribution**: `deno compile` produces a single `./aicard` binary that serves the bundled app
 - **Recipe/card parsing**: deterministic parser that reads Markdown formats defined in docs
-- **Sous chef**: calls the Anthropic API (`claude-sonnet-4-6`); API calls only, local model is future
+- **Sous chef**: calls any of 5 providers via `createSousChef(config)` — Anthropic (`claude-sonnet-4-6` default), OpenAI, Gemini, Mistral, or Ollama (local, no key required)
 - **Card execution**: each card type has an executor; v1 ships with: Listen, Wait, Send Message
 - **Storage**: browser localStorage for kitchen state; file system access via `<input type="file">`
 - **No backend required for v1** — except the Anthropic API for the sous chef
@@ -104,16 +104,25 @@ aicard/
       kitchen-state.ts
       equipment.ts
     runner/                      ← wires everything together
-      recipe-runner.ts
+      recipe-runner.ts           ← execution loop; accepts injected ExecutorRegistry
+      recipe-readiness.ts        ← pre-flight checks (SRP: separate from runner)
+      run-state-repository.ts    ← persistence abstraction for run state
     sous-chef/                   ← the AI collaborator
-      sous-chef.ts
-      prompts.ts
+      sous-chef.ts               ← createSousChef: readiness, describe, hat options, ask
+      client.ts                  ← sousChefAsk: Anthropic SDK + OpenAI-compatible fetch
+      providers.ts               ← provider metadata (Anthropic, OpenAI, Gemini, Mistral, Ollama)
+      prompts.ts                 ← system prompts and context builders
     ui/                          ← React components
       App.tsx
       Kitchen.tsx
       RecipeView.tsx
       CardConfig.tsx
-      SousChef.tsx
+      SousChef.tsx               ← hat button, toasts, ask panel
+      SousChefProviders.tsx      ← provider selection and API key config
+      StepInteraction.tsx        ← user-input form rendered during a running step
+      EquipmentConnect.tsx       ← equipment API key connection dialog
+      sous-chef-storage.ts       ← SousChef setup persistence (localStorage)
+      provider-logos.tsx         ← SVG logos for each provider
     test/                        ← test infrastructure
       bdd/                       ← custom BDD runner
     features/                    ← BDD step definitions
@@ -152,8 +161,8 @@ The data flow is: **Recipe file → Parser → Recipe object → Runner → Card
 
 - **Parser layer** (`src/parser/`): Markdown → typed objects. Deterministic. No AI. Errors accumulate in `errors[]` arrays — parsers never throw.
 - **Executor layer** (`src/cards/`): Each card type implements the `CardExecutor` interface. v1 has three executors: Listen, Wait, Send Message.
-- **Kitchen state** (`src/kitchen/`): Equipment tracking, readiness checks. Backed by localStorage.
-- **Recipe runner** (`src/runner/`): Orchestrates parsing, kitchen checks, and step execution.
+- **Kitchen state** (`src/kitchen/`): Equipment tracking. Persistence behind `KitchenRepository` interface; production impl uses localStorage.
+- **Recipe runner** (`src/runner/`): Orchestrates parsing, kitchen checks, and step execution. Readiness logic in `recipe-readiness.ts`; run-state persistence behind `RunStateRepository` interface.
 - **Sous chef** (`src/sous-chef/`): Anthropic API calls for user guidance. Not involved in parsing or execution — only in the user experience.
 - **UI layer** (`src/ui/`): React components mapping to user journeys.
 

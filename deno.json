@@ -6,7 +6,7 @@
     "compile": "deno compile --allow-net --allow-read --include dist src/server.ts -o aicard",
     "build": "deno task build:frontend && deno task compile",
     "test": "deno test --allow-read src/",
-    "check": "deno check src/parser/ src/runner/ src/cards/ src/kitchen/ src/sous-chef/ src/features/ src/server.ts"
+    "check": "deno check src/"
   },
   "imports": {
     "@types/react": "npm:@types/react@^18.3.28",
