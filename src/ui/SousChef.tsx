@@ -23,34 +23,44 @@ interface Toast {
   id: number
   message: string
   type: 'info' | 'warning' | 'error'
+  persistent?: boolean
   exiting?: boolean
 }
 
 let toastCounter = 0
 
+type ErrorSeverity = 'blocking' | 'transient'
+
+interface SousChefError {
+  message: string
+  severity: ErrorSeverity
+}
+
 // Map API errors to Maria-friendly messages.
-function sousChefErrorMessage(err: unknown): string {
+// "blocking" errors need a toast — they won't resolve without user action.
+// "transient" errors can live in the panel — retrying may fix them.
+function sousChefError(err: unknown): SousChefError {
   const msg = err instanceof Error ? err.message : String(err)
   const status = (err as Record<string, unknown>)?.status as number | undefined
-  if (status === 401 || msg.includes('401')) {
-    return "Your API key doesn't look right. Double-check it at console.anthropic.com and try again."
-  }
   if (msg.toLowerCase().includes('credit balance') || msg.toLowerCase().includes('billing')) {
-    return "Your Anthropic account has no API credits. Add some at console.anthropic.com → Plans & Billing (a few dollars is enough to start)."
+    return { severity: 'blocking', message: "Your Anthropic account has no API credits. Add some at console.anthropic.com → Plans & Billing (a few dollars is enough to start)." }
+  }
+  if (status === 401 || msg.includes('401')) {
+    return { severity: 'blocking', message: "Your API key doesn't look right. Remove it from Your Kitchen and add the correct one from console.anthropic.com/settings/keys." }
   }
   if (status === 403 || msg.includes('403')) {
-    return "Your API key doesn't have access to this model. Check your plan at console.anthropic.com."
+    return { severity: 'blocking', message: "Your API key doesn't have permission to use this model. Check your plan at console.anthropic.com." }
   }
   if (status === 404 || msg.includes('404') || msg.toLowerCase().includes('not found')) {
-    return "The sous chef model isn't available on your account. Check your plan at console.anthropic.com."
+    return { severity: 'blocking', message: "The sous chef model isn't available on your account. Check your plan at console.anthropic.com." }
   }
   if (status === 429 || msg.includes('429') || msg.includes('rate')) {
-    return "The sous chef is a bit busy right now. Wait a moment and try again."
+    return { severity: 'transient', message: "The sous chef is a bit busy right now. Wait a moment and try again." }
   }
   if (msg.includes('fetch') || msg.includes('network') || msg.toLowerCase().includes('failed to fetch')) {
-    return "Can't reach the sous chef — check your internet connection and try again."
+    return { severity: 'transient', message: "Can't reach the sous chef — check your internet connection and try again." }
   }
-  return `I couldn't reach the sous chef. Error: ${msg}`
+  return { severity: 'transient', message: `I couldn't reach the sous chef. Error: ${msg}` }
 }
 
 function LoadingDots() {
@@ -125,11 +135,17 @@ export default function SousChef({ apiKey, recipe, kitchen, runState: externalRu
       setOptions(opts)
     } catch (err) {
       console.error('[sous chef] getHatOptions failed:', err)
-      setOptions([
-        'Check if my kitchen is ready',
-        'What does this recipe do?',
-        'I want to ask something else',
-      ])
+      const { message, severity } = sousChefError(err)
+      if (severity === 'blocking') {
+        addToast(message, 'error')
+        setHatState('closed')
+      } else {
+        setOptions([
+          'Check if my kitchen is ready',
+          'What does this recipe do?',
+          'I want to ask something else',
+        ])
+      }
     } finally {
       setLoadingOptions(false)
     }
@@ -157,7 +173,13 @@ export default function SousChef({ apiKey, recipe, kitchen, runState: externalRu
       setAnswer(response)
     } catch (err) {
       console.error('[sous chef] ask failed:', err)
-      setAnswer(sousChefErrorMessage(err))
+      const { message, severity } = sousChefError(err)
+      if (severity === 'blocking') {
+        addToast(message, 'error')
+        setHatState('closed')
+      } else {
+        setAnswer(message)
+      }
     } finally {
       setLoadingAnswer(false)
     }
@@ -165,14 +187,23 @@ export default function SousChef({ apiKey, recipe, kitchen, runState: externalRu
 
   function addToast(message: string, type: Toast['type'] = 'info') {
     const id = ++toastCounter
-    setToasts(prev => [...prev, { id, message, type }])
-    // Start exit animation, then remove
-    setTimeout(() => {
-      setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t))
-    }, 5500)
+    const persistent = type === 'error'
+    setToasts(prev => [...prev, { id, message, type, persistent }])
+    if (!persistent) {
+      setTimeout(() => {
+        setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t))
+      }, 5500)
+      setTimeout(() => {
+        setToasts(prev => prev.filter(t => t.id !== id))
+      }, 6000)
+    }
+  }
+
+  function dismissToast(id: number) {
+    setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t))
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id))
-    }, 6000)
+    }, 400)
   }
 
   // Expose addToast for the recipe runner
@@ -201,7 +232,16 @@ export default function SousChef({ apiKey, recipe, kitchen, runState: externalRu
             className={toastClass(toast)}
             role={toast.type === 'error' ? 'alert' : 'status'}
           >
-            {toast.message}
+            <span>{toast.message}</span>
+            {toast.persistent && (
+              <button
+                className={styles.toastDismiss}
+                onClick={() => dismissToast(toast.id)}
+                aria-label="Dismiss"
+              >
+                ✕
+              </button>
+            )}
           </div>
         ))}
       </div>

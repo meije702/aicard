@@ -325,6 +325,27 @@
   line-height: var(--leading-normal);
   box-shadow: 0 4px 12px rgba(44, 36, 22, 0.12);
   animation: toastIn var(--duration-normal) var(--ease-out);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.toastDismiss {
+  flex-shrink: 0;
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  padding: 0;
+  line-height: 1;
+  font-family: var(--font-body);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.toastDismiss:hover {
+  color: var(--text-primary);
 }
 
 .toastInfo {
