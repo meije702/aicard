@@ -9,6 +9,20 @@ export interface SousChefConfig {
   provider: SousChefProviderId
   apiKey: string       // empty string for Ollama (no key required)
   baseUrl?: string     // override — used for Ollama (http://localhost:11434)
+  model?: string       // override — lets user pick a specific model (e.g. Ollama)
+}
+
+// Multi-provider storage — one entry per provider the user has configured.
+// SousChefSetup is the storage format; SousChefConfig is the resolved active config.
+export interface SousChefProviderEntry {
+  apiKey: string       // empty string for Ollama
+  baseUrl?: string     // Ollama: http://localhost:11434
+  model?: string       // user-chosen model (e.g. 'llama3.2', 'mistral')
+}
+
+export interface SousChefSetup {
+  active: SousChefProviderId | null
+  providers: Partial<Record<SousChefProviderId, SousChefProviderEntry>>
 }
 
 // --- Recipe and kitchen types ---

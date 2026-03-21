@@ -1,38 +1,17 @@
 import { useState } from 'react'
-import type { Recipe, SousChefConfig } from '../types.ts'
+import type { Recipe, SousChefSetup } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import { parseRecipe } from '../parser/recipe-parser.ts'
 import { loadKitchen, saveKitchen, upsertEquipment } from '../kitchen/kitchen-state.ts'
 import { createEquipment } from '../kitchen/equipment.ts'
+import { loadSousChefSetup, saveSousChefSetup, deriveActiveConfig } from './sous-chef-storage.ts'
 import Kitchen from './Kitchen.tsx'
 import RecipeView from './RecipeView.tsx'
 import SousChef from './SousChef.tsx'
 import EquipmentConnect from './EquipmentConnect.tsx'
-import ProviderConnect from './ProviderConnect.tsx'
 import styles from './App.module.css'
 
 type Screen = 'kitchen' | 'recipe'
-
-const PROVIDER_STORAGE_KEY = 'aicard:sous-chef-config'
-const LEGACY_API_KEY = 'aicard:api-key'
-
-function loadSousChefConfig(): SousChefConfig | null {
-  // Migrate legacy Anthropic-only key to new format
-  const legacy = localStorage.getItem(LEGACY_API_KEY)
-  if (legacy) {
-    const migrated: SousChefConfig = { provider: 'anthropic', apiKey: legacy.trim() }
-    localStorage.setItem(PROVIDER_STORAGE_KEY, JSON.stringify(migrated))
-    localStorage.removeItem(LEGACY_API_KEY)
-    return migrated
-  }
-  const stored = localStorage.getItem(PROVIDER_STORAGE_KEY)
-  if (!stored) return null
-  try {
-    return JSON.parse(stored) as SousChefConfig
-  } catch {
-    return null
-  }
-}
 
 function getInitialTheme(): 'light' | 'dark' {
   const stored = localStorage.getItem('aicard:theme')
@@ -60,21 +39,16 @@ export default function App() {
   const [activeRunState, setActiveRunState] = useState<RunState | null>(null)
   // Equipment connection dialog state
   const [connectingEquipment, setConnectingEquipment] = useState<string | null>(null)
-  // Provider connection dialog state
-  const [providerDialogOpen, setProviderDialogOpen] = useState(false)
 
-  // Sous chef provider config — persisted to localStorage
-  const [sousChefConfig, setSousChefConfig] = useState<SousChefConfig | null>(loadSousChefConfig)
+  // Sous chef multi-provider setup — persisted to localStorage
+  const [sousChefSetup, setSousChefSetup] = useState<SousChefSetup>(loadSousChefSetup)
 
-  function handleSetSousChefConfig(config: SousChefConfig) {
-    setSousChefConfig(config)
-    localStorage.setItem(PROVIDER_STORAGE_KEY, JSON.stringify(config))
+  function handleSousChefSetupChange(setup: SousChefSetup) {
+    setSousChefSetup(setup)
+    saveSousChefSetup(setup)
   }
 
-  function handleClearSousChefConfig() {
-    setSousChefConfig(null)
-    localStorage.removeItem(PROVIDER_STORAGE_KEY)
-  }
+  const activeSousChefConfig = deriveActiveConfig(sousChefSetup)
 
   function persistKitchen(updated: ReturnType<typeof loadKitchen>) {
     setKitchen(updated)
@@ -135,9 +109,8 @@ export default function App() {
             kitchen={kitchen}
             onOpenRecipe={handleOpenRecipeFile}
             onConnectEquipment={handleConnectEquipment}
-            sousChefConfig={sousChefConfig}
-            onConnectSousChef={() => setProviderDialogOpen(true)}
-            onClearSousChef={handleClearSousChefConfig}
+            sousChefSetup={sousChefSetup}
+            onSousChefSetupChange={handleSousChefSetupChange}
           />
         )}
 
@@ -153,7 +126,7 @@ export default function App() {
       </main>
 
       <SousChef
-        sousChefConfig={sousChefConfig}
+        sousChefConfig={activeSousChefConfig}
         recipe={activeRecipe}
         kitchen={kitchen}
         runState={activeRunState}
@@ -168,14 +141,6 @@ export default function App() {
         />
       )}
 
-      {/* Provider selection dialog */}
-      {providerDialogOpen && (
-        <ProviderConnect
-          onConnect={(config) => { handleSetSousChefConfig(config); setProviderDialogOpen(false) }}
-          onCancel={() => setProviderDialogOpen(false)}
-          currentConfig={sousChefConfig}
-        />
-      )}
     </div>
   )
 }

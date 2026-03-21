@@ -50,18 +50,25 @@ function sousChefError(err: unknown, config: SousChefConfig | null): SousChefErr
     return { severity: 'blocking', message: `Your ${providerLabel} account has no credits. Add some at ${keyLink.replace('https://', '')} to continue.` }
   }
   if (status === 401 || msg.includes('401')) {
-    return { severity: 'blocking', message: `Your ${providerLabel} API key doesn't look right. Remove it in Your Kitchen and add the correct one.` }
+    return { severity: 'blocking', message: `Your ${providerLabel} API key doesn't look right. Change your key in Your Kitchen.` }
   }
   if (status === 403 || msg.includes('403')) {
     return { severity: 'blocking', message: `Your ${providerLabel} key doesn't have permission to use this model. Check your plan.` }
   }
   if (status === 404 || msg.includes('404') || msg.toLowerCase().includes('not found')) {
+    if (config?.provider === 'ollama') {
+      const modelName = config.model ?? 'llama3.2'
+      return { severity: 'blocking', message: `Ollama can't find that model. Run "ollama pull ${modelName}" in your terminal, then try again.` }
+    }
     return { severity: 'blocking', message: `The sous chef model isn't available on your ${providerLabel} account. Check your plan.` }
   }
   if (status === 429 || msg.includes('429') || msg.includes('rate')) {
     return { severity: 'transient', message: "The sous chef is a bit busy right now. Wait a moment and try again." }
   }
   if (msg.includes('fetch') || msg.includes('network') || msg.toLowerCase().includes('failed to fetch')) {
+    if (config?.provider === 'ollama') {
+      return { severity: 'blocking', message: "Can't reach Ollama — make sure it's running. Open a terminal and run \"ollama serve\", then try again." }
+    }
     return { severity: 'transient', message: "Can't reach the sous chef — check your internet connection and try again." }
   }
   return { severity: 'transient', message: `I couldn't reach the sous chef. Error: ${msg}` }

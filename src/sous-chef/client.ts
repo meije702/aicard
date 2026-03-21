@@ -15,7 +15,7 @@ export async function sousChefAsk(
   userMessage: string,
 ): Promise<string> {
   const provider = getProvider(config.provider)
-  const model = provider.defaultModel
+  const model = config.model ?? provider.defaultModel
 
   if (config.provider === 'anthropic') {
     return anthropicAsk(config.apiKey, model, systemPrompt, userMessage)

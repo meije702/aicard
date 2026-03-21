@@ -14,6 +14,35 @@ import {
 } from './prompts.ts'
 import { sousChefAsk } from './client.ts'
 
+// Parse the model's response into a clean list of option strings.
+// Models (including Claude) often wrap JSON in ```json ... ``` fences despite
+// being told not to — this handles that gracefully with three fallback tiers.
+function extractOptions(raw: string): string[] {
+  const cleaned = raw
+    .replace(/^```(?:json)?\s*/m, '')
+    .replace(/\s*```\s*$/m, '')
+    .trim()
+
+  try {
+    const parsed = JSON.parse(cleaned) as { options: string[] }
+    if (Array.isArray(parsed.options)) return parsed.options.slice(0, 5)
+  } catch { /* continue */ }
+
+  const match = cleaned.match(/\{[\s\S]*\}/)
+  if (match) {
+    try {
+      const parsed = JSON.parse(match[0]) as { options: string[] }
+      if (Array.isArray(parsed.options)) return parsed.options.slice(0, 5)
+    } catch { /* continue */ }
+  }
+
+  return cleaned
+    .split('\n')
+    .map(l => l.replace(/^[-•*\d.\s]+/, '').trim())
+    .filter(l => l.length > 0 && !l.startsWith('{') && !l.startsWith('`'))
+    .slice(0, 5)
+}
+
 // The sous chef needs a provider config to run.
 // In v1 this is passed in from the UI — no backend required.
 export function createSousChef(config: SousChefConfig) {
@@ -102,16 +131,7 @@ Respond with ONLY a JSON object in this exact format, no other text:
 {"options": ["option one", "option two", "option three"]}`
 
       const response = await ask(config, prompt)
-
-      try {
-        const parsed = JSON.parse(response) as { options: string[] }
-        if (Array.isArray(parsed.options)) return parsed.options.slice(0, 5)
-      } catch {
-        // If JSON parsing fails, fall back to splitting on newlines
-        return response.split('\n').map(l => l.trim()).filter(l => l.length > 0).slice(0, 5)
-      }
-
-      return []
+      return extractOptions(response)
     },
 
     // Answer a free-form question from the user.

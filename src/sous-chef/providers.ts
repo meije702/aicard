@@ -6,7 +6,7 @@ import type { SousChefProviderId } from '../types.ts'
 export interface ProviderMeta {
   id: SousChefProviderId
   label: string          // display name
-  emoji: string          // icon shown in picker and kitchen
+  brandColor: string     // subtle brand tint for UI theming
   description: string    // one-line pitch shown in picker
   costNote: string       // "Free tier available" / "Free with your hardware" / "Pay-per-use"
   defaultModel: string   // model used unless overridden
@@ -22,7 +22,7 @@ export const PROVIDERS: ProviderMeta[] = [
   {
     id: 'anthropic',
     label: 'Claude',
-    emoji: '🤖',
+    brandColor: '#D4A27F',
     description: 'Anthropic\'s Claude — thoughtful, nuanced answers',
     costNote: 'Pay-per-use',
     defaultModel: 'claude-haiku-4-5-20251001',
@@ -36,7 +36,7 @@ export const PROVIDERS: ProviderMeta[] = [
   {
     id: 'openai',
     label: 'ChatGPT',
-    emoji: '💬',
+    brandColor: '#10A37F',
     description: 'OpenAI\'s GPT — widely used, reliable',
     costNote: 'Pay-per-use · free tier available',
     defaultModel: 'gpt-4o-mini',
@@ -50,7 +50,7 @@ export const PROVIDERS: ProviderMeta[] = [
   {
     id: 'gemini',
     label: 'Gemini',
-    emoji: '✨',
+    brandColor: '#4285F4',
     description: 'Google\'s Gemini — generous free tier',
     costNote: 'Free tier available',
     defaultModel: 'gemini-1.5-flash',
@@ -64,7 +64,7 @@ export const PROVIDERS: ProviderMeta[] = [
   {
     id: 'mistral',
     label: 'Mistral',
-    emoji: '🌪️',
+    brandColor: '#FF7000',
     description: 'Open-weight models, European-made',
     costNote: 'Free tier available',
     defaultModel: 'mistral-small-latest',
@@ -78,7 +78,7 @@ export const PROVIDERS: ProviderMeta[] = [
   {
     id: 'ollama',
     label: 'Local model',
-    emoji: '🏠',
+    brandColor: '#888888',
     description: 'Run a model on your own computer — completely free',
     costNote: 'Free · uses your hardware',
     defaultModel: 'llama3.2',

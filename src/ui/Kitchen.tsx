@@ -1,17 +1,17 @@
 // The main kitchen view — Maria's first impression.
 // This needs to feel warm, inviting, and clear — not like a settings panel.
 
-import type { Kitchen as KitchenType, SousChefConfig } from '../types.ts'
+import type { Kitchen as KitchenType, SousChefSetup } from '../types.ts'
 import { getProvider } from '../sous-chef/providers.ts'
+import SousChefProviders from './SousChefProviders.tsx'
 import styles from './Kitchen.module.css'
 
 interface Props {
   kitchen: KitchenType
   onOpenRecipe: () => void
   onConnectEquipment: (name: string) => void
-  sousChefConfig: SousChefConfig | null
-  onConnectSousChef: () => void
-  onClearSousChef: () => void
+  sousChefSetup: SousChefSetup
+  onSousChefSetupChange: (setup: SousChefSetup) => void
 }
 
 // Map equipment names to friendly icons
@@ -26,16 +26,10 @@ function equipmentIcon(name: string): string {
   return '🔌'
 }
 
-export default function Kitchen({ kitchen, onOpenRecipe, sousChefConfig, onConnectSousChef, onClearSousChef }: Props) {
+export default function Kitchen({ kitchen, onOpenRecipe, sousChefSetup, onSousChefSetupChange }: Props) {
   const connectedEquipment = kitchen.equipment.filter(e => e.connected)
-  const isConnected = sousChefConfig !== null
-  const provider = isConnected ? getProvider(sousChefConfig.provider) : null
-
-  // Mask the key: show first 8 chars + bullets
-  function maskedKey(key: string): string {
-    if (!key) return ''
-    return key.slice(0, 8) + '•'.repeat(8)
-  }
+  const isConnected = sousChefSetup.active !== null
+  const activeProvider = isConnected ? getProvider(sousChefSetup.active!) : null
 
   return (
     <div className={styles.container}>
@@ -47,54 +41,24 @@ export default function Kitchen({ kitchen, onOpenRecipe, sousChefConfig, onConne
         </p>
       </div>
 
-      {/* Sous Chef — provider setup */}
+      {/* Sous Chef — inline provider selection */}
       <section className={styles.sectionCard} aria-label="Sous Chef configuration">
         <div className={styles.sectionLabel}>Sous Chef</div>
         <div className={styles.apiKeyRow}>
           <div className={styles.apiKeyIcon} aria-hidden="true">🧑‍🍳</div>
           <div className={styles.apiKeyContent}>
             <div className={styles.apiKeyLabel}>
-              {isConnected ? `Connected to ${provider!.label}` : 'Connect your sous chef'}
+              {isConnected ? `Connected to ${activeProvider!.label}` : 'Choose your sous chef'}
             </div>
             <div className={styles.apiKeyHint}>
               {isConnected
                 ? 'Your key stays in your browser — never sent anywhere else.'
-                : 'Choose an AI to power the sous chef. Anthropic, OpenAI, Gemini, Mistral, or a local model.'}
+                : 'Pick an AI to power your sous chef. Your keys stay in this browser only.'}
             </div>
           </div>
         </div>
 
-        {isConnected ? (
-          <div className={styles.apiKeyConfigured}>
-            <span className={styles.providerBadge} aria-hidden="true">{provider!.emoji}</span>
-            <span className={styles.apiKeyMasked}>
-              {sousChefConfig!.provider === 'ollama'
-                ? (sousChefConfig!.baseUrl ?? 'http://localhost:11434')
-                : maskedKey(sousChefConfig!.apiKey)}
-            </span>
-            <button
-              className={styles.clearKeyButton}
-              onClick={onConnectSousChef}
-              aria-label="Change AI provider"
-            >
-              Change
-            </button>
-            <button
-              className={styles.clearKeyButton}
-              onClick={onClearSousChef}
-              aria-label="Disconnect sous chef"
-            >
-              Remove
-            </button>
-          </div>
-        ) : (
-          <button
-            className={styles.connectProviderButton}
-            onClick={onConnectSousChef}
-          >
-            Choose a provider →
-          </button>
-        )}
+        <SousChefProviders setup={sousChefSetup} onSetupChange={onSousChefSetupChange} />
       </section>
 
       {/* Equipment */}
