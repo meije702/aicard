@@ -6,7 +6,7 @@
 // with a Wait step. The UI shows a persistent "recipe running" banner.
 
 import type { CardConfig, CardResult, EquipmentCheck, Kitchen, RecipeContext } from '../types.ts'
-import type { CardExecutor } from './card-executor.ts'
+import type { CardExecutor, OnInteraction } from './card-executor.ts'
 
 export const waitExecutor: CardExecutor = {
   type: 'wait',
@@ -19,7 +19,8 @@ export const waitExecutor: CardExecutor = {
   async execute(
     config: CardConfig,
     _context: RecipeContext,
-    _kitchen: Kitchen
+    _kitchen: Kitchen,
+    _onInteraction?: OnInteraction
   ): Promise<CardResult> {
     const duration = config['how long'] ?? '0'
     const ms = parseDurationToMs(duration)

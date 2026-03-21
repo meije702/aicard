@@ -37,7 +37,12 @@ export function buildReadinessContext(
   return `Recipe: "${recipeName}"
 Equipment this recipe needs: ${equipmentNeeded.join(', ') || 'nothing'}
 Equipment connected in the kitchen: ${connectedList}
-Missing equipment: ${missingList}`
+Missing equipment: ${missingList}
+
+How steps work in this version:
+- Listen steps ask the user to enter event details when the event happens (e.g., "a new order came in — enter the customer email").
+- Send Message steps compose the message and open it in the user's email app for them to review and send.
+- Wait steps pause the recipe for a set time (the browser tab needs to stay open).`
 }
 
 // Build context for a step-description request

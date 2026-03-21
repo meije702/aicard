@@ -69,14 +69,28 @@ export default function Kitchen({ kitchen, onOpenRecipe, apiKey, onSetApiKey, on
             </button>
           </div>
         ) : (
-          <input
-            type="password"
-            className={styles.apiKeyInput}
-            placeholder="sk-ant-..."
-            value={apiKey}
-            onChange={e => onSetApiKey(e.target.value)}
-            aria-label="Anthropic API key"
-          />
+          <>
+            <input
+              type="password"
+              className={styles.apiKeyInput}
+              placeholder="sk-ant-..."
+              value={apiKey}
+              onChange={e => onSetApiKey(e.target.value)}
+              aria-label="Anthropic API key"
+            />
+            <p className={styles.apiKeyHint} style={{ marginTop: 'var(--space-2)' }}>
+              Don't have a key?{' '}
+              <a
+                href="https://console.anthropic.com/settings/keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.apiKeyLink}
+              >
+                Get one at console.anthropic.com
+              </a>
+              {' '}— it's free to start.
+            </p>
+          </>
         )}
       </section>
 

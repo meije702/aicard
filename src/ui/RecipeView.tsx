@@ -2,9 +2,10 @@
 // This is what Maria sees after she opens a recipe file.
 // A beautiful step-by-step tracker with a vertical timeline.
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Recipe, Kitchen as KitchenType } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
+import type { StepInteraction as StepInteractionType } from '../cards/card-executor.ts'
 import {
   runRecipe,
   checkRecipeReadiness,
@@ -14,7 +15,9 @@ import {
   clearRunState,
   clearAllRunStates,
 } from '../runner/recipe-runner.ts'
+// GetStepConfig is used to pass live config overrides to the runner
 import CardConfig from './CardConfig.tsx'
+import StepInteraction from './StepInteraction.tsx'
 import styles from './RecipeView.module.css'
 
 interface Props {
@@ -35,6 +38,14 @@ function equipmentIcon(name: string): string {
   return '🔌'
 }
 
+// Pending interaction: tracks which step is waiting for user input and
+// holds the resolve function so the executor's Promise can be fulfilled.
+interface PendingInteraction {
+  stepIndex: number
+  interaction: StepInteractionType
+  resolve: (values: Record<string, string>) => void
+}
+
 export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment, onRunStateChange }: Props) {
   // Hydrate from localStorage — if this recipe was mid-run when the tab closed,
   // we show the last known state and offer to restart or start fresh.
@@ -42,6 +53,13 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
   const [isRunning, setIsRunning] = useState(false)
   const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null)
   const [activeRecipe, setActiveRecipe] = useState<Recipe>(recipe)
+  const [pendingInteraction, setPendingInteraction] = useState<PendingInteraction | null>(null)
+  // Ref to hold the latest pending interaction resolve fn so it survives re-renders
+  const interactionResolveRef = useRef<((values: Record<string, string>) => void) | null>(null)
+  // Ref that always holds the current recipe — updated synchronously in
+  // handleConfigSave so the runner sees tweaked configs immediately, without
+  // waiting for the async React state update to flush.
+  const activeRecipeRef = useRef<typeof activeRecipe>(activeRecipe)
 
   // A run is "paused" if we have a saved state that wasn't completed cleanly.
   const isPaused = runState !== null && !runState.complete && !isRunning
@@ -62,18 +80,48 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
     setRunState(null)
   }
 
+  // Handle user submitting an interaction form (e.g., confirming a new order)
+  const handleInteractionSubmit = useCallback((values: Record<string, string>) => {
+    if (interactionResolveRef.current) {
+      interactionResolveRef.current(values)
+      interactionResolveRef.current = null
+    }
+    setPendingInteraction(null)
+  }, [])
+
   async function handleRun() {
     // Before starting, wipe all prior runs for this recipe — none are worth recovering.
     clearAllRunStates(activeRecipe.name)
     setIsRunning(true)
     setRunState(null)
-    const finalState = await runRecipe(activeRecipe, kitchen, (state) => {
-      setRunState({ ...state })
-      // Persist after every step so a tab close doesn't lose progress
-      saveRunState(state)
-    })
+    setPendingInteraction(null)
+
+    const finalState = await runRecipe(
+      activeRecipe,
+      kitchen,
+      (state) => {
+        setRunState({ ...state })
+        // Persist after every step so a tab close doesn't lose progress
+        saveRunState(state)
+      },
+      // Interaction callback: when an executor needs user input, we surface
+      // the request as a form inside the step card and wait for submission.
+      (stepIndex, interaction) => {
+        return new Promise<Record<string, string>>((resolve) => {
+          interactionResolveRef.current = resolve
+          setPendingInteraction({ stepIndex, interaction, resolve })
+        })
+      },
+      // Level 2: supply live config for each step just before it runs,
+      // picking up any tweaks the user made to pending steps mid-run.
+      (stepIndex) => {
+        const step = activeRecipeRef.current.steps[stepIndex]
+        return ('card' in step) ? step.config : null
+      }
+    )
     setRunState(finalState)
     setIsRunning(false)
+    setPendingInteraction(null)
     // Clear once cleanly complete — no recovery needed
     if (finalState.complete) {
       clearAllRunStates(activeRecipe.name)
@@ -86,7 +134,11 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
       if ('card' in step) return { ...step, config: newConfig }
       return step
     })
-    setActiveRecipe({ ...activeRecipe, steps: updatedSteps })
+    const updatedRecipe = { ...activeRecipe, steps: updatedSteps }
+    // Update the ref immediately so the runner picks up the new config
+    // before React's async state update has flushed.
+    activeRecipeRef.current = updatedRecipe
+    setActiveRecipe(updatedRecipe)
     setEditingStepIndex(null)
   }
 
@@ -245,8 +297,10 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
                       {isCardStep && (
                         <span className={styles.cardBadge}>{step.card}</span>
                       )}
-                      {/* Tweak button */}
-                      {isCardStep && !isRunning && !isEditing && (
+                      {/* Tweak button — visible for pending steps (even mid-run)
+                          and for any step when no run is active. Hidden while
+                          the step itself is running, complete, or failed. */}
+                      {isCardStep && !isEditing && (status === 'pending' || !isRunning) && (
                         <button
                           className={styles.tweakButton}
                           onClick={() => setEditingStepIndex(i)}
@@ -269,6 +323,14 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
                       }>
                         {stepRunState.result.message}
                       </p>
+                    )}
+
+                    {/* Interaction form — shown when a step is waiting for user input */}
+                    {pendingInteraction?.stepIndex === i && (
+                      <StepInteraction
+                        interaction={pendingInteraction.interaction}
+                        onSubmit={handleInteractionSubmit}
+                      />
                     )}
 
                     {/* Level 2 config editor */}

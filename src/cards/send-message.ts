@@ -1,65 +1,95 @@
-// The Send Message card: sends a message using a connected service.
-// Note: step reference resolution ({step N: key}) happens in the runner
+// The Send Message card: composes a message and hands it off to the user.
+//
+// TRADE-OFF: v1 uses mailto: to open the user's email client with a
+// pre-composed message. Real email sending requires OAuth (backend) or
+// a transactional email API. The compose-and-hand-off approach is honest:
+// Maria sees the message, reviews it, and sends it herself.
+//
+// Step reference resolution ({step N: key}) happens in the runner
 // before config reaches this executor. By the time execute() is called,
 // all references are already resolved or the step has been failed.
 
 import type { CardConfig, CardResult, EquipmentCheck, Kitchen, RecipeContext } from '../types.ts'
-import type { CardExecutor } from './card-executor.ts'
+import type { CardExecutor, OnInteraction } from './card-executor.ts'
+
+// Build a mailto: URL from the message fields.
+// Handles encoding of special characters in subject and body.
+export function buildMailtoUrl(to: string, subject: string, message: string): string {
+  const params: string[] = []
+  if (subject) params.push(`subject=${encodeURIComponent(subject)}`)
+  if (message) params.push(`body=${encodeURIComponent(message)}`)
+  const query = params.length > 0 ? `?${params.join('&')}` : ''
+  return `mailto:${encodeURIComponent(to)}${query}`
+}
 
 export const sendMessageExecutor: CardExecutor = {
-    type: 'send-message',
+  type: 'send-message',
 
-    checkEquipment(kitchen: Kitchen, _config: CardConfig): EquipmentCheck {
-        // Send Message needs at least one connected messaging service
-        const messagingServices = kitchen.equipment.filter(e => e.connected)
-        return {
-            ready: messagingServices.length > 0,
-            missing: messagingServices.length > 0 ? [] : ['a connected messaging service (email, Slack, etc.)'],
-        }
-    },
+  checkEquipment(kitchen: Kitchen, _config: CardConfig): EquipmentCheck {
+    // Send Message needs at least one connected messaging service
+    const messagingServices = kitchen.equipment.filter(e => e.connected)
+    return {
+      ready: messagingServices.length > 0,
+      missing: messagingServices.length > 0 ? [] : ['a connected messaging service (email, Slack, etc.)'],
+    }
+  },
 
-    async execute(
-        config: CardConfig,
-        _context: RecipeContext,
-        kitchen: Kitchen
-    ): Promise<CardResult> {
-        const to = config['to'] ?? ''
-        const subject = config['subject'] ?? ''
-        const message = config['message'] ?? ''
+  async execute(
+    config: CardConfig,
+    _context: RecipeContext,
+    kitchen: Kitchen,
+    onInteraction?: OnInteraction
+  ): Promise<CardResult> {
+    const to = config['to'] ?? ''
+    const subject = config['subject'] ?? ''
+    const message = config['message'] ?? ''
 
-        if (!to) {
-            return {
-                success: false,
-                output: {},
-                message: 'The message has no recipient. Check the "To" setting in this step.',
-            }
-        }
+    if (!to) {
+      return {
+        success: false,
+        output: {},
+        message: 'The message has no recipient. Check the \u201CTo\u201D setting in this step.',
+      }
+    }
 
-        // Find a connected service that can send messages
-        const sender = kitchen.equipment.find(e => e.connected)
+    // Find a connected service that can send messages
+    const sender = kitchen.equipment.find(e => e.connected)
 
-        if (!sender) {
-            return {
-                success: false,
-                output: {},
-                message: 'No messaging service is connected. Add one to your kitchen first.',
-            }
-        }
+    if (!sender) {
+      return {
+        success: false,
+        output: {},
+        message: 'No messaging service is connected. Add one to your kitchen first.',
+      }
+    }
 
-        // TRADE-OFF: v1 logs the message rather than actually sending it.
-        // Real sending requires an API call to the connected service.
-        // This stub is sufficient to test the full recipe flow.
-        console.log(`[Send Message] To: ${to} | Subject: ${subject} | Message: ${message}`)
+    // If we have an interaction callback, show the composed message for review
+    if (onInteraction) {
+      await onInteraction({
+        prompt: 'Ready to send this message. Review it and open in your email:',
+        fields: [
+          { key: 'to', label: 'To', defaultValue: to, readOnly: true },
+          { key: 'subject', label: 'Subject', defaultValue: subject, readOnly: true },
+          { key: 'message', label: 'Message', defaultValue: message, readOnly: true },
+        ],
+      })
 
-        return {
-            success: true,
-            output: { sent: 'true', to, subject },
-            message: `Message sent to ${to}.`,
-        }
-    },
+      // Open the user's email client with the composed message
+      const mailtoUrl = buildMailtoUrl(to, subject, message)
+      if (typeof globalThis.open === 'function') {
+        globalThis.open(mailtoUrl, '_blank')
+      }
+    }
 
-    describe(config: CardConfig): string {
-        const to = config['to'] ?? 'the recipient'
-        return `Sending a message to ${to}...`
-    },
+    return {
+      success: true,
+      output: { sent: 'true', to, subject },
+      message: `Opened your email with a message to ${to} ready to send.`,
+    }
+  },
+
+  describe(config: CardConfig): string {
+    const to = config['to'] ?? 'the recipient'
+    return `Sending a message to ${to}...`
+  },
 }

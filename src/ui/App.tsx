@@ -7,6 +7,7 @@ import { createEquipment } from '../kitchen/equipment.ts'
 import Kitchen from './Kitchen.tsx'
 import RecipeView from './RecipeView.tsx'
 import SousChef from './SousChef.tsx'
+import EquipmentConnect from './EquipmentConnect.tsx'
 import styles from './App.module.css'
 
 type Screen = 'kitchen' | 'recipe'
@@ -35,6 +36,8 @@ export default function App() {
   })
   const [activeRecipe, setActiveRecipe] = useState<Recipe | null>(null)
   const [activeRunState, setActiveRunState] = useState<RunState | null>(null)
+  // Equipment connection dialog state
+  const [connectingEquipment, setConnectingEquipment] = useState<string | null>(null)
   // Persist API key to localStorage so it survives page refreshes (Issue 6).
   // TRADE-OFF: localStorage is not encrypted. We treat the key like any
   // browser-saved credential — good enough for v1, not a vault.
@@ -75,9 +78,15 @@ export default function App() {
   }
 
   function handleConnectEquipment(name: string) {
-    const equipment = createEquipment(name, name.toLowerCase())
-    const connected = { ...equipment, connected: true }
+    setConnectingEquipment(name)
+  }
+
+  function handleEquipmentConnected(config: Record<string, string>) {
+    if (!connectingEquipment) return
+    const equipment = createEquipment(connectingEquipment, connectingEquipment.toLowerCase())
+    const connected = { ...equipment, connected: true, config }
     persistKitchen(upsertEquipment(kitchen, connected))
+    setConnectingEquipment(null)
   }
 
   return (
@@ -130,6 +139,15 @@ export default function App() {
         kitchen={kitchen}
         runState={activeRunState}
       />
+
+      {/* Equipment connection dialog */}
+      {connectingEquipment && (
+        <EquipmentConnect
+          equipmentName={connectingEquipment}
+          onConnect={handleEquipmentConnected}
+          onCancel={() => setConnectingEquipment(null)}
+        />
+      )}
     </div>
   )
 }

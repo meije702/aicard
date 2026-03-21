@@ -4,11 +4,12 @@
 import type {
     Recipe,
     CardStep,
+    CardConfig,
     RecipeContext,
     CardResult,
     Kitchen,
 } from '../types.ts'
-import type { CardExecutor } from '../cards/card-executor.ts'
+import type { CardExecutor, OnInteraction, StepInteraction } from '../cards/card-executor.ts'
 import { listenExecutor } from '../cards/listen.ts'
 import { waitExecutor } from '../cards/wait.ts'
 import { sendMessageExecutor } from '../cards/send-message.ts'
@@ -37,6 +38,8 @@ export interface StepState {
     description: string    // the describe() output — plain English
     status: StepStatus
     result?: CardResult
+    // Set when a step is waiting for user input via the interaction callback
+    pendingInteraction?: StepInteraction
 }
 
 export interface RunState {
@@ -51,12 +54,28 @@ export interface RunState {
 // Callback fired whenever the run state changes (a step starts, completes, etc.)
 export type OnStateChange = (state: RunState) => void
 
+// Callback fired when a step needs user input. The UI renders the interaction
+// form; when the user submits, the returned Promise resolves with their values.
+export type OnStepInteraction = (
+    stepIndex: number,
+    interaction: StepInteraction
+) => Promise<Record<string, string>>
+
+// Callback the runner calls just before executing each step to pick up any
+// config the user tweaked after the run started. Return null to use the
+// recipe's original config for that step.
+export type GetStepConfig = (stepIndex: number) => CardConfig | null
+
 // Run a recipe against the kitchen, calling onStateChange after each step.
+// onStepInteraction bridges executor interaction requests to the UI.
+// getStepConfig lets the UI supply live config overrides for pending steps.
 // Returns the final run state.
 export async function runRecipe(
     recipe: Recipe,
     kitchen: Kitchen,
-    onStateChange?: OnStateChange
+    onStateChange?: OnStateChange,
+    onStepInteraction?: OnStepInteraction,
+    getStepConfig?: GetStepConfig
 ): Promise<RunState> {
     const context: RecipeContext = {}
     const errors: string[] = []
@@ -123,11 +142,23 @@ export async function runRecipe(
         stepState.status = 'running'
         onStateChange?.({ ...state, steps: [...steps] })
 
+        // Pick up any config the user tweaked after the run started.
+        // getStepConfig returns null if the step wasn't tweaked, in which case
+        // we fall back to the recipe's original config.
+        const liveConfig: CardConfig = getStepConfig?.(i) ?? cardStep.config
+
+        // If the config changed, update the description so the timeline
+        // reflects what will actually run (e.g. "Waiting 1 day..." not "3 days").
+        if (liveConfig !== cardStep.config) {
+            stepState.description = executor.describe(liveConfig)
+            onStateChange?.({ ...state, steps: [...steps] })
+        }
+
         // Resolve step references ({step N: key}) before passing config to the
         // executor. Unresolved references fail the step with a clear error instead
         // of flowing through as literal strings.
         const { resolved: resolvedConfig, errors: resolveErrors } = resolveAllValues(
-            cardStep.config,
+            liveConfig,
             context,
             cardStep.number
         )
@@ -144,8 +175,23 @@ export async function runRecipe(
             break
         }
 
+        // Build the interaction callback for this step.
+        // When the executor calls onInteraction, we update the step state
+        // to show the pending interaction, notify the UI, and wait for the
+        // user's response.
+        const stepInteraction: OnInteraction | undefined = onStepInteraction
+            ? async (interaction: StepInteraction) => {
+                stepState.pendingInteraction = interaction
+                onStateChange?.({ ...state, steps: [...steps] })
+                const response = await onStepInteraction(i, interaction)
+                stepState.pendingInteraction = undefined
+                onStateChange?.({ ...state, steps: [...steps] })
+                return response
+            }
+            : undefined
+
         try {
-            const result = await executor.execute(resolvedConfig, context, kitchen)
+            const result = await executor.execute(resolvedConfig, context, kitchen, stepInteraction)
             stepState.result = result
             stepState.status = result.success ? 'complete' : 'failed'
 

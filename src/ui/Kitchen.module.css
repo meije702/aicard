@@ -129,6 +129,16 @@
   outline: none;
 }
 
+.apiKeyLink {
+  color: var(--accent-primary);
+  text-decoration: none;
+  font-weight: var(--weight-medium);
+}
+
+.apiKeyLink:hover {
+  text-decoration: underline;
+}
+
 .apiKeyConfigured {
   display: flex;
   align-items: center;

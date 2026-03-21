@@ -13,15 +13,15 @@ These are the step-by-step experiences we are building toward. Each journey is d
 3. She clicks "Open a recipe" and selects `thank-you-follow-up.recipe.md` from her downloads.
 4. The recipe appears: title, purpose, kitchen requirements, steps — all in plain English.
 5. The sous chef taps her on the shoulder: "This recipe needs Shopify and Gmail. You haven't connected either yet."
-6. Maria clicks "Connect Shopify." She follows the prompts. Shopify is now in her kitchen.
-7. She connects Gmail the same way.
+6. Maria clicks "Connect Shopify." A panel opens with plain instructions: where to find her Shopify access token and how to copy it. She pastes it in and clicks "Connect." Shopify is now in her kitchen.
+7. She clicks "Connect Gmail." A panel explains that AICard will prepare her emails and open them in her own email app for her to review and send — no password needed. She clicks "Got it." Gmail is now in her kitchen.
 8. The sous chef updates: "Your kitchen is ready. This recipe will listen for new orders in Shopify, wait three days, then send an email from Gmail."
 9. Maria clicks "Run recipe."
-10. The recipe starts. Step 1 — "Listening for a new order in Shopify" — is shown, with a quiet indicator that it's waiting.
-11. A new order comes in. Step 1 completes. Step 2 starts: "Waiting 3 days."
-12. A persistent banner appears: "Recipe running — keep this tab open."
-13. Three days pass. Step 2 completes. Step 3 starts: "Sending thank you email to customer."
-14. The email sends. The recipe completes. A gentle confirmation: "Recipe complete. The thank you email was sent."
+10. The recipe starts. Step 1 shows a form: "When a new order comes in from Shopify, enter the details here." Maria fills in the customer's email address and order number, then clicks "Got one!" Step 1 completes.
+11. Step 2 starts: "Waiting 3 days." A persistent banner appears: "Recipe running — keep this tab open."
+12. Three days pass. Step 2 completes. Step 3 starts.
+13. A panel shows the email AICard has prepared — the recipient, subject, and message — all filled in from the order details Maria entered. She clicks "Open in email." Her email app opens with the message ready to go. She sends it and clicks "Got it."
+14. The recipe completes. A gentle confirmation appears: "Recipe complete."
 
 ---
 
@@ -30,11 +30,11 @@ These are the step-by-step experiences we are building toward. Each journey is d
 **Maria's second week**
 
 1. Maria runs the thank-you recipe. It works. But she wants to wait 5 days instead of 3.
-2. She opens the recipe view. She sees Step 2: "Wait a few days — 3 days."
-3. She taps the step. A small config panel opens: "How long: 3 days."
-4. She changes it to "5 days." She saves.
-5. The recipe now waits 5 days. Nothing else changes.
-6. The sous chef confirms: "Updated. The recipe will now wait 5 days before sending."
+2. She opens the recipe view and clicks "Run recipe." The first step — "Listen for a new order" — starts. While it's waiting for her input, the next steps are still shown below it.
+3. She spots Step 2: "Wait a few days." There's a "Tweak" button on it — the recipe is running but this step hasn't started yet, so she can still change it.
+4. She clicks "Tweak." The step expands in place: "How long: 3 days."
+5. She changes it to "5 days" and saves. The step description updates immediately: "Waiting 5 days..."
+6. She enters the order details in Step 1 and clicks "Got one!" The recipe moves to Step 2, which now waits 5 days. Nothing else changes.
 
 ---
 
