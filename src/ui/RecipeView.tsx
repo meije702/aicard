@@ -13,6 +13,7 @@ import type { Recipe, Kitchen as KitchenType } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import type { StepInteraction as StepInteractionType } from '../cards/card-executor.ts'
 import { runRecipe, defaultExecutors } from '../runner/recipe-runner.ts'
+import { createSubRecipeRunner } from '../runner/sub-recipe-runner.ts'
 import { checkRecipeReadiness, recipeHasWaitSteps } from '../runner/recipe-readiness.ts'
 import {
   localStorageRunStateRepository as runStateRepo,
@@ -172,7 +173,9 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
           // Store timer id so the "Run this step" button can clear it
           ;(reviewResolveRef as unknown as { timerId?: ReturnType<typeof setTimeout> }).timerId = timer
         })
-      }
+      },
+      // Level 3: run sub-recipe steps by looking them up in the kitchen
+      createSubRecipeRunner(kitchen, defaultExecutors)
     )
     setRunState(finalState)
     setIsRunning(false)
@@ -417,7 +420,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
                         <span className={styles.cardBadge}>{CARD_LABELS[step.card] ?? step.card}</span>
                       )}
                       {'recipe' in step && (
-                        <span className={styles.subRecipeBadge}>Sub-recipe — not yet supported</span>
+                        <span className={styles.subRecipeBadge}>Sub-recipe</span>
                       )}
                       {/* Tweak button — visible for pending steps (even mid-run)
                           and for any step when no run is active. Hidden while

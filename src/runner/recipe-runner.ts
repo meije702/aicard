@@ -95,6 +95,12 @@ export type GetStepConfig = (stepIndex: number) => CardConfig | null
 // the step before it executes. Omit for Level 1 / test runs.
 export type OnStepReview = (stepIndex: number) => Promise<void>
 
+// Callback invoked when a sub-recipe step is reached (Level 3 — Combining).
+// Receives the recipe name and returns a CardResult. If omitted, sub-recipe
+// steps are skipped silently (Level 1/2 backwards-compatible behaviour).
+// Implement with createSubRecipeRunner from sub-recipe-runner.ts.
+export type OnSubRecipe = (recipeName: string) => Promise<CardResult>
+
 // Run a recipe against the kitchen, calling onStateChange after each step.
 // onStepInteraction bridges executor interaction requests to the UI.
 // getStepConfig lets the UI supply live config overrides for pending steps.
@@ -111,7 +117,8 @@ export async function runRecipe(
     getStepConfig?: GetStepConfig,
     executors: ExecutorRegistry = defaultExecutors,
     isCancelled?: () => boolean,
-    onStepReview?: OnStepReview
+    onStepReview?: OnStepReview,
+    onSubRecipe?: OnSubRecipe
 ): Promise<RunState> {
     const context: RecipeContext = {}
     const errors: string[] = []
@@ -127,12 +134,13 @@ export async function runRecipe(
                 status: 'pending' as StepStatus,
             }
         }
-        // Sub-recipe step — not yet supported in v1
+        // Sub-recipe step — pending until the run loop decides to execute or skip it
+        const recipeName = (step as { recipe: string }).recipe
         return {
             number: step.number,
             name: step.name,
-            description: `Sub-recipe "${(step as { recipe: string }).recipe}" — not yet supported`,
-            status: 'skipped' as StepStatus,
+            description: `Running "${recipeName}"...`,
+            status: 'pending' as StepStatus,
         }
     })
 
@@ -152,10 +160,25 @@ export async function runRecipe(
         const recipeStep = recipe.steps[i]
         const stepState = steps[i]
 
-        // Sub-recipe steps are skipped in v1
+        // Sub-recipe steps: execute via onSubRecipe callback (Level 3) or skip (Level 1/2)
         if (!('card' in recipeStep)) {
-            stepState.status = 'skipped'
+            const subStep = recipeStep as { number: number; name: string; recipe: string }
+            if (!onSubRecipe) {
+                // Backwards-compatible: no sub-recipe runner injected — skip silently
+                stepState.status = 'skipped'
+                onStateChange?.({ ...state, steps: [...steps] })
+                continue
+            }
+            stepState.status = 'running'
+            stepState.description = `Running "${subStep.recipe}"...`
             onStateChange?.({ ...state, steps: [...steps] })
+            const result = await onSubRecipe(subStep.recipe)
+            stepState.result = result
+            stepState.status = result.success ? 'complete' : 'failed'
+            if (result.success) context[`step ${subStep.number}`] = result.output
+            else errors.push(result.message)
+            onStateChange?.({ ...state, steps: [...steps] })
+            if (stepState.status === 'failed') break
             continue
         }
 

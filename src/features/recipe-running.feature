@@ -48,12 +48,27 @@ Feature: Recipe running
     Then the recipe should complete successfully
     And the step should complete in under 5 seconds
 
-  Scenario: Sub-recipe step is parsed without error and skipped at runtime
+  Scenario: Sub-recipe step is skipped when no sub-recipe runner is provided
     Given a recipe with a sub-recipe step named "Notify team" calling "Alert Recipe"
     And a kitchen with no equipment
-    When I run the recipe
+    When I run the recipe without sub-recipe support
     Then the recipe should complete successfully
     And the sub-recipe step should have status "skipped"
+
+  Scenario: Sub-recipe step executes when recipe is in kitchen
+    Given a recipe with a sub-recipe step named "Notify team" calling "Inner Recipe"
+    And a kitchen with no equipment
+    And "Inner Recipe" is in the kitchen as a Wait recipe of "1 second"
+    When I run the recipe
+    Then the recipe should complete successfully
+    And the sub-recipe step should have status "complete"
+
+  Scenario: Sub-recipe step fails when recipe is not in kitchen
+    Given a recipe with a sub-recipe step named "Notify team" calling "Missing Recipe"
+    And a kitchen with no equipment
+    When I run the recipe
+    Then the sub-recipe step should have status "failed"
+    And the step result should include "not in your kitchen"
 
   Scenario: Step description reflects tweaked config at runtime
     Given a Wait step configured for "999 days"

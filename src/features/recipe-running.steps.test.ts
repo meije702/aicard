@@ -2,7 +2,8 @@
 
 import { Given, Then, When } from '../test/bdd/step-registry.ts'
 import { runFeature } from '../test/bdd/runner.ts'
-import { runRecipe } from '../runner/recipe-runner.ts'
+import { runRecipe, defaultExecutors } from '../runner/recipe-runner.ts'
+import { createSubRecipeRunner } from '../runner/sub-recipe-runner.ts'
 import { checkRecipeReadiness, recipeHasWaitSteps } from '../runner/recipe-readiness.ts'
 import { RecipeBuilder } from '../test/helpers/recipe-builder.ts'
 import { assertEquals, assertExists } from 'jsr:@std/assert'
@@ -181,8 +182,30 @@ Given('a recipe with a sub-recipe step named {string} calling {string}',
   }
 )
 
+Given('{string} is in the kitchen as a Wait recipe of {string}',
+  (world: World, name: string, duration: string) => {
+    const inner = RecipeBuilder.named(name)
+      .withStep('Wait', 'wait', { 'how long': duration })
+      .build()
+    world.kitchen = {
+      ...world.kitchen,
+      recipes: [...world.kitchen.recipes, inner],
+    }
+  }
+)
+
 When('I run the recipe', async (world: World) => {
   assertExists(world.recipe)
+  world.runState = await runRecipe(
+    world.recipe, world.kitchen,
+    undefined, undefined, undefined, undefined, undefined, undefined,
+    createSubRecipeRunner(world.kitchen, defaultExecutors)
+  )
+})
+
+When('I run the recipe without sub-recipe support', async (world: World) => {
+  assertExists(world.recipe)
+  // No onSubRecipe injected — backwards-compatible Level 1/2 behaviour
   world.runState = await runRecipe(world.recipe, world.kitchen)
 })
 
