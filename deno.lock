@@ -6,6 +6,8 @@
     "npm:@anthropic-ai/sdk@0.39": "0.39.0",
     "npm:@cucumber/gherkin@29": "29.0.0",
     "npm:@cucumber/messages@26": "26.0.1",
+    "npm:@types/react-dom@^18.3.7": "18.3.7_@types+react@18.3.28",
+    "npm:@types/react@^18.3.28": "18.3.28",
     "npm:@vitejs/plugin-react@*": "4.7.0_vite@5.4.21_@babel+core@7.29.0",
     "npm:@vitejs/plugin-react@^4.3.0": "4.7.0_vite@5.4.21_@babel+core@7.29.0",
     "npm:react-dom@^18.3.0": "18.3.1_react@18.3.1",
@@ -498,6 +500,22 @@
         "undici-types"
       ]
     },
+    "@types/prop-types@15.7.15": {
+      "integrity": "sha512-F6bEyamV9jKGAFBEmlQnesRPGOQqS2+Uwi0Em15xenOxHaf2hv6L8YCVn3rPdPJOiJfPiCnLIRyvwVaqMY3MIw=="
+    },
+    "@types/react-dom@18.3.7_@types+react@18.3.28": {
+      "integrity": "sha512-MEe3UeoENYVFXzoXEWsvcpg6ZvlrFNlOQ7EOsvhI3CfAXwzPfO8Qwuxd40nepsYKqyyVQnTdEfv68q91yLcKrQ==",
+      "dependencies": [
+        "@types/react"
+      ]
+    },
+    "@types/react@18.3.28": {
+      "integrity": "sha512-z9VXpC7MWrhfWipitjNdgCauoMLRdIILQsAEV+ZesIzBq/oUlxk0m3ApZuMFCXdnS4U7KrI+l3WRUEGQ8K1QKw==",
+      "dependencies": [
+        "@types/prop-types",
+        "csstype"
+      ]
+    },
     "@types/uuid@10.0.0": {
       "integrity": "sha512-7gqG38EyHgyP1S+7+xomFtL+ZNHcKv6DwNaCZmJmo1vgMugyF3TCnXVg4t1uk89mLNwnLtnY3TpOpCOyp1/xHQ=="
     },
@@ -567,6 +585,9 @@
     },
     "convert-source-map@2.0.0": {
       "integrity": "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg=="
+    },
+    "csstype@3.2.3": {
+      "integrity": "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ=="
     },
     "debug@4.4.3": {
       "integrity": "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==",
@@ -911,6 +932,8 @@
       "npm:@anthropic-ai/sdk@0.39",
       "npm:@cucumber/gherkin@29",
       "npm:@cucumber/messages@26",
+      "npm:@types/react-dom@^18.3.7",
+      "npm:@types/react@^18.3.28",
       "npm:@vitejs/plugin-react@^4.3.0",
       "npm:react-dom@^18.3.0",
       "npm:react@^18.3.0",

@@ -34,13 +34,6 @@ export default function SousChefProviders({ setup, onSetupChange }: Props) {
     return 'unconfigured'
   }
 
-  function handleSave(id: SousChefProviderId, entry: SousChefProviderEntry) {
-    onSetupChange({
-      ...setup,
-      providers: { ...setup.providers, [id]: entry },
-    })
-  }
-
   function handleMakeActive(id: SousChefProviderId, entry?: SousChefProviderEntry) {
     const providers = entry
       ? { ...setup.providers, [id]: entry }
@@ -91,7 +84,6 @@ export default function SousChefProviders({ setup, onSetupChange }: Props) {
               provider={expandedProvider}
               entry={expandedEntry}
               isActive={setup.active === expandedProvider.id}
-              onSave={(entry) => handleSave(expandedProvider.id, entry)}
               onMakeActive={(entry) => handleMakeActive(expandedProvider.id, entry)}
               onRemove={() => handleRemove(expandedProvider.id)}
             />
@@ -159,14 +151,12 @@ function ProviderConfigPanel({
   provider,
   entry,
   isActive,
-  onSave,
   onMakeActive,
   onRemove,
 }: {
   provider: ProviderMeta
   entry: SousChefProviderEntry | undefined
   isActive: boolean
-  onSave: (entry: SousChefProviderEntry) => void
   onMakeActive: (entry?: SousChefProviderEntry) => void
   onRemove: () => void
 }) {
@@ -174,7 +164,7 @@ function ProviderConfigPanel({
   const [apiKey, setApiKey] = useState(entry?.apiKey ?? '')
   const [baseUrl, setBaseUrl] = useState(entry?.baseUrl ?? 'http://localhost:11434')
   const [model, setModel] = useState(entry?.model ?? '')
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
   // When entry changes (e.g. switching providers), reset local state
   const entryKey = entry?.apiKey ?? ''
@@ -202,11 +192,6 @@ function ProviderConfigPanel({
       ...(provider.id === 'ollama' ? { baseUrl: baseUrl.trim() || 'http://localhost:11434' } : {}),
       ...(model ? { model } : {}),
     }
-  }
-
-  function handleSave() {
-    onSave(buildEntry())
-    setEditing(false)
   }
 
   function handleMakeActive() {
@@ -320,7 +305,7 @@ function KeyFields({
       </p>
       <label className={styles.inputLabel} htmlFor="provider-key">API key</label>
       <input
-        ref={inputRef}
+        ref={inputRef as React.RefObject<HTMLInputElement>}
         id="provider-key"
         type="password"
         className={styles.keyInput}

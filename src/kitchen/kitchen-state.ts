@@ -1,35 +1,48 @@
-// Kitchen state backed by localStorage.
+// Kitchen state: pure domain transforms + repository abstraction for persistence.
 // The kitchen holds the user's equipment, recipes, and pantry.
 //
-// Design: the kitchen state is the single source of truth for what is in the user's
-// workspace. All reads and writes go through these functions.
+// Pure functions (upsertEquipment, removeEquipment, etc.) transform Kitchen values.
+// Persistence is behind the KitchenRepository interface — the production implementation
+// uses localStorage; tests can inject an in-memory stub.
 
 import type { Kitchen, Equipment, Recipe, CardDefinition } from '../types.ts'
 
-const STORAGE_KEY = 'aicard:kitchen'
-
-// Load the kitchen from localStorage, or return an empty kitchen.
-export function loadKitchen(): Kitchen {
-  if (typeof localStorage === 'undefined') {
-    // Running in a test environment — return an empty kitchen
-    return emptyKitchen()
-  }
-
-  const raw = localStorage.getItem(STORAGE_KEY)
-  if (!raw) return emptyKitchen()
-
-  try {
-    return JSON.parse(raw) as Kitchen
-  } catch {
-    // If the stored data is malformed, start fresh rather than crashing
-    return emptyKitchen()
-  }
+// Abstraction over kitchen persistence — same pattern as RunStateRepository.
+export interface KitchenRepository {
+  load(): Kitchen
+  save(kitchen: Kitchen): void
 }
 
-// Save the kitchen to localStorage.
+const STORAGE_KEY = 'aicard:kitchen'
+
+// Production implementation backed by window.localStorage.
+// All methods are no-ops / return empty when localStorage is unavailable (e.g. tests).
+export const localStorageKitchenRepository: KitchenRepository = {
+  load(): Kitchen {
+    if (typeof localStorage === 'undefined') return emptyKitchen()
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return emptyKitchen()
+    try {
+      return JSON.parse(raw) as Kitchen
+    } catch {
+      return emptyKitchen()
+    }
+  },
+
+  save(kitchen: Kitchen): void {
+    if (typeof localStorage === 'undefined') return
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(kitchen))
+  },
+}
+
+// Convenience aliases that delegate to the default repository.
+// Keeps existing call-sites working without a breaking change.
+export function loadKitchen(): Kitchen {
+  return localStorageKitchenRepository.load()
+}
+
 export function saveKitchen(kitchen: Kitchen): void {
-  if (typeof localStorage === 'undefined') return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(kitchen))
+  localStorageKitchenRepository.save(kitchen)
 }
 
 // Add or update a piece of equipment in the kitchen.

@@ -9,6 +9,8 @@
     "check": "deno check src/parser/ src/runner/ src/cards/ src/kitchen/ src/sous-chef/ src/features/ src/server.ts"
   },
   "imports": {
+    "@types/react": "npm:@types/react@^18.3.28",
+    "@types/react-dom": "npm:@types/react-dom@^18.3.7",
     "react": "npm:react@^18.3.0",
     "react/jsx-runtime": "npm:react@^18.3.0/jsx-runtime",
     "react-dom/client": "npm:react-dom@^18.3.0/client",
