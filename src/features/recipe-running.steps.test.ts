@@ -2,7 +2,8 @@
 
 import { Given, Then, When } from '../test/bdd/step-registry.ts'
 import { runFeature } from '../test/bdd/runner.ts'
-import { checkRecipeReadiness, recipeHasWaitSteps, runRecipe } from '../runner/recipe-runner.ts'
+import { runRecipe } from '../runner/recipe-runner.ts'
+import { checkRecipeReadiness, recipeHasWaitSteps } from '../runner/recipe-readiness.ts'
 import { RecipeBuilder } from '../test/helpers/recipe-builder.ts'
 import { assertEquals, assertExists } from 'jsr:@std/assert'
 import type { World } from '../test/bdd/world.ts'

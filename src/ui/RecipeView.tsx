@@ -6,15 +6,11 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Recipe, Kitchen as KitchenType } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import type { StepInteraction as StepInteractionType } from '../cards/card-executor.ts'
+import { runRecipe } from '../runner/recipe-runner.ts'
+import { checkRecipeReadiness, recipeHasWaitSteps } from '../runner/recipe-readiness.ts'
 import {
-  runRecipe,
-  checkRecipeReadiness,
-  recipeHasWaitSteps,
-  saveRunState,
-  loadRunState,
-  clearRunState,
-  clearAllRunStates,
-} from '../runner/recipe-runner.ts'
+  localStorageRunStateRepository as runStateRepo,
+} from '../runner/run-state-repository.ts'
 // GetStepConfig is used to pass live config overrides to the runner
 import CardConfig from './CardConfig.tsx'
 import StepInteraction from './StepInteraction.tsx'
@@ -49,7 +45,7 @@ interface PendingInteraction {
 export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment, onRunStateChange }: Props) {
   // Hydrate from localStorage — if this recipe was mid-run when the tab closed,
   // we show the last known state and offer to restart or start fresh.
-  const [runState, setRunState] = useState<RunState | null>(() => loadRunState(recipe.name))
+  const [runState, setRunState] = useState<RunState | null>(() => runStateRepo.load(recipe.name))
   const [isRunning, setIsRunning] = useState(false)
   const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null)
   const [activeRecipe, setActiveRecipe] = useState<Recipe>(recipe)
@@ -76,7 +72,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
 
   function handleStartFresh() {
     // Clear only this specific paused run, not siblings with the same name.
-    if (runState) clearRunState(runState.runId)
+    if (runState) runStateRepo.clear(runState.runId)
     setRunState(null)
   }
 
@@ -91,7 +87,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
 
   async function handleRun() {
     // Before starting, wipe all prior runs for this recipe — none are worth recovering.
-    clearAllRunStates(activeRecipe.name)
+    runStateRepo.clearAll(activeRecipe.name)
     setIsRunning(true)
     setRunState(null)
     setPendingInteraction(null)
@@ -102,7 +98,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
       (state) => {
         setRunState({ ...state })
         // Persist after every step so a tab close doesn't lose progress
-        saveRunState(state)
+        runStateRepo.save(state)
       },
       // Interaction callback: when an executor needs user input, we surface
       // the request as a form inside the step card and wait for submission.
@@ -124,7 +120,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
     setPendingInteraction(null)
     // Clear once cleanly complete — no recovery needed
     if (finalState.complete) {
-      clearAllRunStates(activeRecipe.name)
+      runStateRepo.clearAll(activeRecipe.name)
     }
   }
 

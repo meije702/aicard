@@ -18,7 +18,18 @@ Given('recipe text:', (world: World, docstring: string) => {
 
 When('I parse the recipe', (world: World) => {
   assertExists(world.rawText, 'No recipe text to parse')
-  world.recipe = parseRecipe(world.rawText)
+  const parsed = parseRecipe(world.rawText)
+  // Materialise a Recipe in all cases so Then steps can inspect name/errors uniformly.
+  // On failure the partialRecipe is filled with defaults for any missing fields.
+  world.recipe = parsed.success
+    ? parsed.recipe
+    : {
+        name:    parsed.partialRecipe.name    ?? '',
+        purpose: parsed.partialRecipe.purpose ?? '',
+        kitchen: parsed.partialRecipe.kitchen ?? [],
+        steps:   parsed.partialRecipe.steps   ?? [],
+        errors:  parsed.errors,
+      }
 })
 
 Then('the recipe name should be {string}', (world: World, name: string) => {

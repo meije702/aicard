@@ -14,7 +14,9 @@ Given('a recipe file {string}', async (world: World, filename: string) => {
 
 When('I parse the recipe', (world: World) => {
   assertExists(world.rawText, 'No recipe text to parse')
-  world.recipe = parseRecipe(world.rawText)
+  const parsed = parseRecipe(world.rawText)
+  if (!parsed.success) throw new Error(`Parse failed: ${parsed.errors.join('; ')}`)
+  world.recipe = parsed.recipe
 })
 
 Given('a new kitchen', (world: World) => {

@@ -37,6 +37,7 @@ export default function App() {
   })
   const [activeRecipe, setActiveRecipe] = useState<Recipe | null>(null)
   const [activeRunState, setActiveRunState] = useState<RunState | null>(null)
+  const [recipeParseErrors, setRecipeParseErrors] = useState<string[]>([])
   // Equipment connection dialog state
   const [connectingEquipment, setConnectingEquipment] = useState<string | null>(null)
 
@@ -63,8 +64,13 @@ export default function App() {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (!file) return
       const text = await file.text()
-      const recipe = parseRecipe(text)
-      setActiveRecipe(recipe)
+      const parsed = parseRecipe(text)
+      if (!parsed.success) {
+        setRecipeParseErrors(parsed.errors)
+        return
+      }
+      setRecipeParseErrors([])
+      setActiveRecipe(parsed.recipe)
       setScreen('recipe')
     }
     input.click()
@@ -131,6 +137,25 @@ export default function App() {
         kitchen={kitchen}
         runState={activeRunState}
       />
+
+      {/* Recipe parse error dialog — shown when the uploaded file has parse errors */}
+      {recipeParseErrors.length > 0 && (
+        <div role="dialog" aria-modal="true" style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
+        }}>
+          <div style={{
+            background: 'var(--color-surface)', borderRadius: '12px',
+            padding: '24px', maxWidth: '480px', width: '90%',
+          }}>
+            <h2 style={{ margin: '0 0 12px', fontSize: '1rem' }}>Recipe file has errors</h2>
+            <ul style={{ margin: '0 0 16px', paddingLeft: '1.25rem', fontSize: '0.875rem' }}>
+              {recipeParseErrors.map((e, i) => <li key={i}>{e}</li>)}
+            </ul>
+            <button onClick={() => setRecipeParseErrors([])}>Dismiss</button>
+          </div>
+        </div>
+      )}
 
       {/* Equipment connection dialog */}
       {connectingEquipment && (

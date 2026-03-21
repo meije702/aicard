@@ -6,7 +6,7 @@
 // The sous chef speaks recipe language. Never technical language.
 
 import type { Recipe, Kitchen, SousChefConfig } from '../types.ts'
-import { checkRecipeReadiness, recipeHasWaitSteps } from '../runner/recipe-runner.ts'
+import { checkRecipeReadiness, recipeHasWaitSteps } from '../runner/recipe-readiness.ts'
 import {
   SOUS_CHEF_SYSTEM_PROMPT,
   buildReadinessContext,

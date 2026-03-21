@@ -2,45 +2,80 @@
 // See docs/AICard_Recipe_Format.md for the format specification.
 //
 // Design rule: never throw. If a section is missing or malformed, record the
-// problem in recipe.errors[] and continue with sensible defaults.
+// problem and continue with sensible defaults.
+//
+// Each helper returns a ParseResult<T> — { value, errors } — rather than
+// accepting a mutable errors array. parseRecipe merges all returned errors.
 
-import type { Recipe, RecipeStep, CardStep, SubRecipeStep, CardType, CardConfig } from '../types.ts'
+import type { Recipe, RecipeStep, CardStep, SubRecipeStep, CardType, CardConfig, ParseResult, ParsedRecipe } from '../types.ts'
 
-export function parseRecipe(markdown: string): Recipe {
+// Card types recognised by the system. Anything else is a parse error.
+const KNOWN_CARD_TYPES: readonly CardType[] = ['listen', 'wait', 'send-message']
+
+export function parseRecipe(markdown: string): ParsedRecipe {
   const lines = markdown.split('\n')
-  const errors: string[] = []
 
-  const name = parseName(lines, errors)
-  const purpose = parsePurpose(lines)
-  const kitchen = parseKitchen(lines)
-  const steps = parseSteps(lines, errors)
+  const nameResult  = parseName(lines)
+  const purposeResult = parsePurpose(lines)
+  const kitchenResult = parseKitchen(lines)
+  const stepsResult = parseSteps(lines)
 
-  return { name, purpose, kitchen, steps, errors }
+  const allErrors = [
+    ...nameResult.errors,
+    ...purposeResult.errors,
+    ...kitchenResult.errors,
+    ...stepsResult.errors,
+  ]
+
+  const partialRecipe: Partial<Recipe> = {
+    name:    nameResult.value,
+    purpose: purposeResult.value,
+    kitchen: kitchenResult.value,
+    steps:   stepsResult.value,
+    errors:  allErrors,
+  }
+
+  if (allErrors.length > 0) {
+    return { success: false, errors: allErrors, partialRecipe }
+  }
+
+  return {
+    success: true,
+    recipe: {
+      name:    nameResult.value,
+      purpose: purposeResult.value,
+      kitchen: kitchenResult.value,
+      steps:   stepsResult.value,
+      errors:  [],
+    },
+  }
 }
 
 // Parse the recipe name from the first level-1 heading: # Title
-function parseName(lines: string[], errors: string[]): string {
+function parseName(lines: string[]): ParseResult<string> {
   for (const line of lines) {
     const match = line.match(/^#\s+(.+)$/)
-    if (match) return match[1].trim()
+    if (match) return { value: match[1].trim(), errors: [] }
   }
-  errors.push('Recipe is missing a title. Add a line like: # Recipe Name')
-  return ''
+  return {
+    value: '',
+    errors: ['Recipe is missing a title. Add a line like: # Recipe Name'],
+  }
 }
 
 // Parse the purpose from the first blockquote: > One sentence.
-function parsePurpose(lines: string[]): string {
+function parsePurpose(lines: string[]): ParseResult<string> {
   for (const line of lines) {
     const match = line.match(/^>\s+(.+)$/)
-    if (match) return match[1].trim()
+    if (match) return { value: match[1].trim(), errors: [] }
   }
-  return ''
+  return { value: '', errors: [] }
 }
 
 // Parse the ## Kitchen section into a list of equipment names.
-function parseKitchen(lines: string[]): string[] {
+function parseKitchen(lines: string[]): ParseResult<string[]> {
   const { lines: sectionLines } = extractSection(lines, '## Kitchen')
-  if (sectionLines.length === 0) return []
+  if (sectionLines.length === 0) return { value: [], errors: [] }
 
   const equipment: string[] = []
   for (const line of sectionLines) {
@@ -53,26 +88,33 @@ function parseKitchen(lines: string[]): string[] {
       }
     }
   }
-  return equipment
+  return { value: equipment, errors: [] }
 }
 
 // Parse the ## Steps section into an array of RecipeStep objects.
-function parseSteps(lines: string[], errors: string[]): RecipeStep[] {
+function parseSteps(lines: string[]): ParseResult<RecipeStep[]> {
   const { lines: sectionLines, startLine } = extractSection(lines, '## Steps')
 
   if (sectionLines.length === 0) {
-    errors.push('Recipe is missing a Steps section. Add ## Steps with at least one step.')
-    return []
+    return {
+      value: [],
+      errors: ['Recipe is missing a Steps section. Add ## Steps with at least one step.'],
+    }
   }
 
   // Split the section into individual step blocks, each starting with ### N. Name.
   // Line numbers are tracked so error messages can point to the exact location.
   const stepBlocks = splitIntoStepBlocks(sectionLines, startLine)
-  const steps = stepBlocks
-    .map(({ block, lineNumber }) => parseStepBlock(block, lineNumber, errors))
-    .filter(Boolean) as RecipeStep[]
+  const errors: string[] = []
+  const steps: RecipeStep[] = []
 
-  // Fix B: validate that step numbers form a sequential 1-based series.
+  for (const { block, lineNumber } of stepBlocks) {
+    const result = parseStepBlock(block, lineNumber)
+    errors.push(...result.errors)
+    if (result.value !== null) steps.push(result.value)
+  }
+
+  // Validate that step numbers form a sequential 1-based series.
   // Out-of-order or duplicate numbers are confusing — the runner processes
   // steps in file order, not by number, so mismatches hide bugs.
   for (let i = 0; i < steps.length; i++) {
@@ -84,15 +126,15 @@ function parseSteps(lines: string[], errors: string[]): RecipeStep[] {
     }
   }
 
-  return steps
+  return { value: steps, errors }
 }
 
 // Extract the lines belonging to a named section (e.g. "## Steps").
 // Returns the lines between this section heading and the next ## heading,
 // plus the 1-based line number of the first content line (for error messages).
 //
-// Fix A: comparison is case-insensitive so "## kitchen" and "## KITCHEN"
-// both match "## Kitchen" — the parser accepts the section regardless of case.
+// Comparison is case-insensitive so "## kitchen" and "## KITCHEN" both
+// match "## Kitchen".
 function extractSection(lines: string[], heading: string): { lines: string[], startLine: number } {
   const result: string[] = []
   let inSection = false
@@ -121,8 +163,8 @@ function extractSection(lines: string[], heading: string): { lines: string[], st
 // Lines that appear before the first ### heading (e.g. blank lines at the
 // top of the section) are ignored — they are not part of any step.
 //
-// Fix C: returns the 1-based line number of each ### heading so error
-// messages can point to the exact line in the file.
+// Returns the 1-based line number of each ### heading so error messages
+// can point to the exact line in the file.
 function splitIntoStepBlocks(lines: string[], sectionStartLine: number): { block: string[], lineNumber: number }[] {
   const blocks: { block: string[], lineNumber: number }[] = []
   let current: string[] | null = null
@@ -145,15 +187,17 @@ function splitIntoStepBlocks(lines: string[], sectionStartLine: number): { block
 }
 
 // Parse a single step block into a CardStep or SubRecipeStep.
-// Fix C: lineNumber is the 1-based position of the ### heading in the source
-// file. Error messages include it so contributors can jump directly to the line.
-function parseStepBlock(block: string[], lineNumber: number, errors: string[]): RecipeStep | null {
+// lineNumber is the 1-based position of the ### heading in the source file —
+// error messages include it so contributors can jump directly to the line.
+function parseStepBlock(block: string[], lineNumber: number): ParseResult<RecipeStep | null> {
   const headingLine = block[0]
   // ### N. Step name
   const headingMatch = headingLine.match(/^###\s+(\d+)\.\s+(.+)$/)
   if (!headingMatch) {
-    errors.push(`Line ${lineNumber}: Could not parse step heading: "${headingLine}"`)
-    return null
+    return {
+      value: null,
+      errors: [`Line ${lineNumber}: Could not parse step heading: "${headingLine}"`],
+    }
   }
 
   const number = parseInt(headingMatch[1], 10)
@@ -166,28 +210,42 @@ function parseStepBlock(block: string[], lineNumber: number, errors: string[]): 
     const cardMatch = line.match(/^\*Card:\s+(.+)\*$/)
     if (cardMatch) {
       const cardType = normaliseCardType(cardMatch[1].trim())
+      if (cardType === null) {
+        const raw = cardMatch[1].trim()
+        return {
+          value: null,
+          errors: [
+            `Line ${lineNumber}: Step "${name}" uses unknown card type "${raw}". ` +
+            `Known types: ${KNOWN_CARD_TYPES.join(', ')}.`,
+          ],
+        }
+      }
       const config = parseConfig(block.slice(i + 1))
       const step: CardStep = { number, name, card: cardType, config }
-      return step
+      return { value: step, errors: [] }
     }
 
     const recipeMatch = line.match(/^\*Recipe:\s+(.+)\*$/)
     if (recipeMatch) {
       // Sub-recipes are parsed correctly but not supported in v1.
       // Flag at parse time so the user sees it before they try to run.
-      errors.push(
-        `Step "${name}" uses a sub-recipe ("${recipeMatch[1].trim()}"), which is not yet supported. ` +
-        `This step will be skipped when the recipe runs.`
-      )
       const step: SubRecipeStep = { number, name, recipe: recipeMatch[1].trim() }
-      return step
+      return {
+        value: step,
+        errors: [
+          `Step "${name}" uses a sub-recipe ("${recipeMatch[1].trim()}"), which is not yet supported. ` +
+          `This step will be skipped when the recipe runs.`,
+        ],
+      }
     }
   }
 
-  errors.push(
-    `Line ${lineNumber}: Step "${name}" has no card or recipe declaration. Add a line like: *Card: Listen*`
-  )
-  return null
+  return {
+    value: null,
+    errors: [
+      `Line ${lineNumber}: Step "${name}" has no card or recipe declaration. Add a line like: *Card: Listen*`,
+    ],
+  }
 }
 
 // Parse bullet-point config lines into a key-value map.
@@ -207,12 +265,13 @@ function parseConfig(lines: string[]): CardConfig {
   return config
 }
 
-// Normalise a card type name to lowercase-hyphenated.
+// Normalise a card type name to lowercase-hyphenated and validate it against
+// the known set. Returns null for unrecognised types so the caller can push a
+// parse error rather than silently casting an invalid string to CardType.
 // "Send Message" → "send-message", "Listen" → "listen", "Wait" → "wait"
-function normaliseCardType(raw: string): CardType {
+function normaliseCardType(raw: string): CardType | null {
   const normalised = raw.toLowerCase().replace(/\s+/g, '-')
-  // TRADE-OFF: we cast to CardType here. Unknown card types will surface at
-  // execution time, not parse time. This keeps the parser simple and lets
-  // recipe files reference card types that haven't been installed yet.
-  return normalised as CardType
+  return (KNOWN_CARD_TYPES as readonly string[]).includes(normalised)
+    ? (normalised as CardType)
+    : null
 }

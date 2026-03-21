@@ -15,15 +15,33 @@ function asCardStep(step: unknown): CardStep {
   return s
 }
 
+// Helper: assert success and unwrap the recipe, or throw.
+function expectSuccess(markdown: string) {
+  const parsed = parseRecipe(markdown)
+  if (!parsed.success) {
+    throw new Error(`Expected parsing to succeed, but got errors: ${parsed.errors.join('; ')}`)
+  }
+  return parsed.recipe
+}
+
+// Helper: assert failure and return the error result.
+function expectFailure(markdown: string) {
+  const parsed = parseRecipe(markdown)
+  if (parsed.success) {
+    throw new Error('Expected parsing to fail, but it succeeded')
+  }
+  return parsed
+}
+
 // --- thank-you-follow-up fixture ---
 
 Deno.test("parseRecipe: parses the recipe name from the title heading", () => {
-  const recipe = parseRecipe(thankyouFixture)
+  const recipe = expectSuccess(thankyouFixture)
   assertEquals(recipe.name, 'Thank You Follow-Up')
 })
 
 Deno.test("parseRecipe: parses the purpose from the blockquote", () => {
-  const recipe = parseRecipe(thankyouFixture)
+  const recipe = expectSuccess(thankyouFixture)
   assertEquals(
     recipe.purpose,
     'Send a personalised thank you message to new customers three days after their first purchase.'
@@ -31,51 +49,51 @@ Deno.test("parseRecipe: parses the purpose from the blockquote", () => {
 })
 
 Deno.test("parseRecipe: parses the kitchen equipment list", () => {
-  const recipe = parseRecipe(thankyouFixture)
+  const recipe = expectSuccess(thankyouFixture)
   assertEquals(recipe.kitchen, ['Shopify', 'Gmail'])
 })
 
 Deno.test("parseRecipe: parses the correct number of steps", () => {
-  const recipe = parseRecipe(thankyouFixture)
+  const recipe = expectSuccess(thankyouFixture)
   assertEquals(recipe.steps.length, 3)
 })
 
 Deno.test("parseRecipe: parses the first step as a Listen card", () => {
-  const recipe = parseRecipe(thankyouFixture)
+  const recipe = expectSuccess(thankyouFixture)
   const step = asCardStep(recipe.steps[0])
   assertEquals(step.card, 'listen')
   assertEquals(step.name, 'Listen for a new order')
 })
 
 Deno.test("parseRecipe: parses the second step as a Wait card with config", () => {
-  const recipe = parseRecipe(thankyouFixture)
+  const recipe = expectSuccess(thankyouFixture)
   const step = asCardStep(recipe.steps[1])
   assertEquals(step.card, 'wait')
   assertEquals(step.config['how long'], '3 days')
 })
 
 Deno.test("parseRecipe: parses the third step as a Send Message card", () => {
-  const recipe = parseRecipe(thankyouFixture)
+  const recipe = expectSuccess(thankyouFixture)
   const step = asCardStep(recipe.steps[2])
   assertEquals(step.card, 'send-message')
   assertEquals(step.config['to'], '{step 1: customer email}')
 })
 
-Deno.test("parseRecipe: returns no errors for a well-formed recipe", () => {
-  const recipe = parseRecipe(thankyouFixture)
-  assertEquals(recipe.errors.length, 0)
+Deno.test("parseRecipe: returns success with no errors for a well-formed recipe", () => {
+  const parsed = parseRecipe(thankyouFixture)
+  assertEquals(parsed.success, true)
 })
 
 // --- community-message-router fixture ---
 
 Deno.test("parseRecipe: parses community recipe name and steps", () => {
-  const recipe = parseRecipe(communityFixture)
+  const recipe = expectSuccess(communityFixture)
   assertEquals(recipe.name, 'Community Message Router')
   assertEquals(recipe.steps.length, 2)
 })
 
 Deno.test("parseRecipe: parses community recipe equipment", () => {
-  const recipe = parseRecipe(communityFixture)
+  const recipe = expectSuccess(communityFixture)
   assertEquals(recipe.kitchen.includes('Discord'), true)
   assertEquals(recipe.kitchen.includes('Gmail'), true)
 })
@@ -83,7 +101,7 @@ Deno.test("parseRecipe: parses community recipe equipment", () => {
 // --- card type normalisation ---
 
 Deno.test("parseRecipe: normalises card type names to lowercase-hyphenated", () => {
-  const recipe = parseRecipe(`
+  const recipe = expectSuccess(`
 # Test Recipe
 > Test purpose.
 ## Kitchen
@@ -98,7 +116,7 @@ Deno.test("parseRecipe: normalises card type names to lowercase-hyphenated", () 
 })
 
 Deno.test("parseRecipe: normalises config keys to lowercase", () => {
-  const recipe = parseRecipe(`
+  const recipe = expectSuccess(`
 # Test Recipe
 > Test purpose.
 ## Kitchen
@@ -112,10 +130,26 @@ Deno.test("parseRecipe: normalises config keys to lowercase", () => {
   assertEquals(step.config['how long'], '5 days')
 })
 
+// --- unknown card type produces a parse error ---
+
+Deno.test("parseRecipe: returns failure for an unknown card type", () => {
+  const result = expectFailure(`
+# Test Recipe
+> Test purpose.
+## Kitchen
+- None
+## Steps
+### 1. Make Coffee
+*Card: Make Coffee*
+  `)
+  assertGreater(result.errors.length, 0)
+  assertEquals(result.errors.some(e => e.includes('Make Coffee') || e.includes('make-coffee')), true)
+})
+
 // --- graceful handling of incomplete recipes ---
 
 Deno.test("parseRecipe: returns sensible defaults when Kitchen section is missing", () => {
-  const recipe = parseRecipe(`
+  const recipe = expectSuccess(`
 # Minimal Recipe
 > A recipe with no kitchen section.
 ## Steps
@@ -127,33 +161,33 @@ Deno.test("parseRecipe: returns sensible defaults when Kitchen section is missin
   assertEquals(recipe.steps.length, 1)
 })
 
-Deno.test("parseRecipe: adds an error when the title is missing but does not throw", () => {
-  const recipe = parseRecipe(`
+Deno.test("parseRecipe: returns failure when the title is missing", () => {
+  const result = expectFailure(`
 > A recipe with no title.
 ## Steps
 ### 1. Wait
 *Card: Wait*
 - How long: 1 hour
   `)
-  assertEquals(recipe.name, '')
-  assertGreater(recipe.errors.length, 0)
+  assertGreater(result.errors.length, 0)
+  assertEquals(result.partialRecipe.name, '')
 })
 
-Deno.test("parseRecipe: returns an empty steps array when Steps section is missing", () => {
-  const recipe = parseRecipe(`
+Deno.test("parseRecipe: returns failure with empty steps when Steps section is missing", () => {
+  const result = expectFailure(`
 # No Steps Recipe
 > This recipe has no steps.
 ## Kitchen
 - None
   `)
-  assertEquals(recipe.steps, [])
-  assertGreater(recipe.errors.length, 0)
+  assertEquals(result.partialRecipe.steps, [])
+  assertGreater(result.errors.length, 0)
 })
 
 // --- Fix A: case-insensitive section header matching ---
 
 Deno.test("parseRecipe: parses kitchen section with lowercase heading", () => {
-  const recipe = parseRecipe(`
+  const recipe = expectSuccess(`
 # Test Recipe
 > Test purpose.
 ## kitchen
@@ -169,7 +203,7 @@ Deno.test("parseRecipe: parses kitchen section with lowercase heading", () => {
 })
 
 Deno.test("parseRecipe: parses steps section with uppercase heading", () => {
-  const recipe = parseRecipe(`
+  const recipe = expectSuccess(`
 # Test Recipe
 > Test purpose.
 ## Kitchen
@@ -186,7 +220,7 @@ Deno.test("parseRecipe: parses steps section with uppercase heading", () => {
 // --- Fix B: sequential step number validation ---
 
 Deno.test("parseRecipe: records an error when step numbers are out of order", () => {
-  const recipe = parseRecipe(`
+  const result = expectFailure(`
 # Test Recipe
 > Test purpose.
 ## Kitchen
@@ -203,15 +237,15 @@ Deno.test("parseRecipe: records an error when step numbers are out of order", ()
 - How long: 3 hours
   `)
   // All three steps are still returned — parser never drops steps
-  assertEquals(recipe.steps.length, 3)
+  assertEquals(result.partialRecipe.steps?.length, 3)
   // But errors are recorded for the steps with wrong numbers
-  assertGreater(recipe.errors.length, 0)
-  const errorText = recipe.errors.join(' ')
+  assertGreater(result.errors.length, 0)
+  const errorText = result.errors.join(' ')
   assertEquals(errorText.includes('sequential'), true)
 })
 
 Deno.test("parseRecipe: records an error when step numbers are duplicated", () => {
-  const recipe = parseRecipe(`
+  const result = expectFailure(`
 # Test Recipe
 > Test purpose.
 ## Kitchen
@@ -224,16 +258,16 @@ Deno.test("parseRecipe: records an error when step numbers are duplicated", () =
 *Card: Wait*
 - How long: 2 hours
   `)
-  assertEquals(recipe.steps.length, 2)
-  assertGreater(recipe.errors.length, 0)
-  const errorText = recipe.errors.join(' ')
+  assertEquals(result.partialRecipe.steps?.length, 2)
+  assertGreater(result.errors.length, 0)
+  const errorText = result.errors.join(' ')
   assertEquals(errorText.includes('sequential'), true)
 })
 
 // --- Fix C: line numbers in error messages ---
 
 Deno.test("parseRecipe: includes a line number when a step heading cannot be parsed", () => {
-  const recipe = parseRecipe(`
+  const result = expectFailure(`
 # Test Recipe
 > Test purpose.
 ## Kitchen
@@ -243,13 +277,13 @@ Deno.test("parseRecipe: includes a line number when a step heading cannot be par
 *Card: Wait*
 - How long: 1 hour
   `)
-  assertGreater(recipe.errors.length, 0)
-  const errorText = recipe.errors.join(' ')
+  assertGreater(result.errors.length, 0)
+  const errorText = result.errors.join(' ')
   assertEquals(errorText.includes('Line'), true)
 })
 
 Deno.test("parseRecipe: includes a line number when a step has no card declaration", () => {
-  const recipe = parseRecipe(`
+  const result = expectFailure(`
 # Test Recipe
 > Test purpose.
 ## Kitchen
@@ -258,7 +292,7 @@ Deno.test("parseRecipe: includes a line number when a step has no card declarati
 ### 1. A step with no card
 - How long: 1 hour
   `)
-  assertGreater(recipe.errors.length, 0)
-  const errorText = recipe.errors.join(' ')
+  assertGreater(result.errors.length, 0)
+  const errorText = result.errors.join(' ')
   assertEquals(errorText.includes('Line'), true)
 })

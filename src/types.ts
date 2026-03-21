@@ -1,6 +1,17 @@
 // Domain types for AICard. Variable names and type names reflect the domain vocabulary.
 // See docs/AICard_Domain_Language.md for definitions.
 
+// --- Parser result types ---
+
+// Returned by pure parser helper functions — value plus any errors accumulated.
+export type ParseResult<T> = { value: T; errors: string[] }
+
+// Returned by parseRecipe — forces callers to handle the error case explicitly
+// before passing a recipe to the runner.
+export type ParsedRecipe =
+    | { success: true;  recipe: Recipe }
+    | { success: false; errors: string[]; partialRecipe: Partial<Recipe> }
+
 // --- Sous chef provider config ---
 
 export type SousChefProviderId = 'anthropic' | 'openai' | 'gemini' | 'mistral' | 'ollama'
