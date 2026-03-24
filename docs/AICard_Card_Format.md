@@ -6,13 +6,14 @@ A card definition is a plain Markdown file with a `.card.md` extension. It defin
 
 ## Structure
 
-A card definition file has five sections:
+A card definition file has six sections:
 
 1. **Title** — the card type name
 2. **Purpose** — a one-sentence description of what this card does
 3. **Equipment** — what equipment (if any) this card needs to run
 4. **Config** — the configuration fields this card accepts
-5. **Example** — a complete example showing the card in a recipe step
+5. **Technique** — how the sous chef should behave when executing this card *(optional)*
+6. **Example** — a complete example showing the card in a recipe step
 
 ---
 
@@ -70,7 +71,35 @@ Which piece of equipment to listen on. Must match an equipment name in the kitch
 
 ---
 
-### 5. Example
+### 5. Technique
+
+An optional `## Technique` section that teaches the sous chef how to execute this card well. This is what turns a generic agent into a competent one. See `docs/AICard_Techniques.md` for the full design.
+
+A technique has three subsections:
+
+- **Voice** — how the sous chef behaves when executing this card
+- **Constraints** — hard limits the sous chef must respect
+- **Expertise** — domain knowledge that improves output quality
+
+```markdown
+## Technique
+
+### Voice
+You compose messages on behalf of the user. You match the tone and style described in their house style.
+
+### Constraints
+- Keep messages under 150 words unless the house style says otherwise.
+- Never invent facts. Use only data from previous steps.
+
+### Expertise
+You understand email etiquette. You write subject lines that are specific and personal.
+```
+
+Cards that do not generate AI output (like Wait) can omit this section entirely. The sous chef falls back to its generic system prompt for steps without a technique.
+
+---
+
+### 6. Example
 
 A `## Example` section showing how this card appears in a recipe step.
 
@@ -182,6 +211,20 @@ The body of the message.
 - To: customer email
 - Subject: Thank you for your order
 - Message: We really appreciate your support. Your order is on its way!
+
+## Technique
+
+### Voice
+You compose messages on behalf of the user. You match the tone and style described in their house style. You write as if you are the user, not as an AI assistant.
+
+### Constraints
+- Keep messages under 150 words unless the house style says otherwise.
+- Never use marketing language unless the recipe's purpose calls for it.
+- Always mention the specific product or event that triggered this recipe.
+- Never invent facts. Use only data from previous steps in the recipe.
+
+### Expertise
+You understand email etiquette. You write subject lines that are specific and personal — "Thanks for your order of [product]" not "Thank you for your purchase." You know when formal language helps (first contact) and when informal is better (follow-up).
 ```
 
 ---
@@ -206,4 +249,5 @@ Examples:
 - The blockquote sets `card.purpose`.
 - The `## Equipment` section lists required/optional equipment.
 - The `## Config` section lists config field names and descriptions.
+- The `## Technique` section is optional. If present, it is injected into the sous chef's prompt when executing this card type. Subsections (Voice, Constraints, Expertise) are parsed as structured text.
 - Config field names are normalised to lowercase when used as keys.

@@ -52,21 +52,45 @@ Wrong vocabulary is the single fastest signal that a contribution was generated 
 
 ## v1 scope — the fence
 
-**Level 1** (Following) and **Level 2** (Tweaking) only. These must be solid before anything else.
+**Level 1** (Following), **Level 2** (Tweaking), and **Level 3** (Combining) are implemented and tested.
 
 - **Level 1**: a user opens a recipe, the sous chef checks their kitchen, and the recipe runs.
 - **Level 2**: a user opens a card in a running recipe and changes a setting.
+- **Level 3**: a recipe step can call another recipe via `*Recipe: Name*`. Sub-recipe execution uses the `OnSubRecipe` callback pattern with `createSubRecipeRunner` factory (max depth 3).
 
 ### What not to build yet
 
 - User accounts or authentication
 - Recipe sharing mechanics
 - The full pantry (8 card types) — v1 has 3: Listen, Wait, Send Message
-- Level 3, 4, or 5 features
+- Level 4 or 5 features
 - A mobile-specific UI
 - Any backend server
 
-Before adding any feature, ask: **"Does Level 1 work yet?"** If not, build that first.
+---
+
+## Roadmap — what comes after v1
+
+### v4 — Techniques and house style
+
+Cards are agent skills. Techniques teach the sous chef how to use each skill well. See `docs/AICard_Techniques.md` for the full design.
+
+- Each card type gets a **technique** document (Voice, Constraints, Expertise) injected into the sous chef's prompt when that card executes
+- Each kitchen gets a **house style** — the user's voice and preferences — that shapes all text generation
+- A **kitchen journal** records what happened and what the user changed. Recent corrections become few-shot examples in prompts
+
+This is structured prompting, not model training. It works with any provider Maria has connected.
+
+### v5 — Pattern detection (not yet designed)
+
+The kitchen journal enables the sous chef to notice patterns and suggest defaults:
+"You always change the greeting — want me to update the default?"
+
+### v6 — New card types (not yet designed)
+
+Expanding the pantry beyond Listen, Wait, Send Message. Candidates: Filter, Transform, Branch.
+
+**Note**: the self-improving model system (fine-tuning, LoRA adapters, training pipelines) is a separate research project and is not on this roadmap.
 
 ---
 

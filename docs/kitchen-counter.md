@@ -42,11 +42,9 @@ A recipe that is listening for an event (Listen card) needs to poll or receive a
 
 ---
 
-### The sub-recipe problem
+### ~~The sub-recipe problem~~ ✓ Resolved
 
-A recipe step can call another recipe (`*Recipe: Name*`). How does the runner find that recipe? By name? By file path? What if it's missing?
-
-**v1 decision**: sub-recipes are not implemented in v1. A step with `*Recipe: Name*` is parsed correctly but shows as "Sub-recipe not yet supported" when it reaches execution. Log it in `recipe.errors[]` at parse time.
+Implemented in Level 3 (commit `2420481`). Sub-recipe steps use the `OnSubRecipe` callback pattern with `createSubRecipeRunner` factory. Recipes are looked up by name in the kitchen. Max nesting depth is 3.
 
 ---
 
@@ -67,6 +65,38 @@ A Listen card captures data (the new order). A Send Message card needs some of t
 **v1 decision**: a `RecipeContext` object accumulates step outputs. Card executors read from context using step names or numbers as keys. The format for referencing earlier outputs in config is: `{step 1: customer email}`.
 
 This is intentionally simple. It handles the thank-you recipe. It will not handle complex data transformations.
+
+---
+
+### The technique injection problem
+
+When the sous chef executes a card, the prompt will include: system prompt + technique + house style + journal entries + step context. How do we stay within token limits as all of these grow?
+
+**Not yet decided.** Needs a token budget per section. What gets truncated first? Probably journal entries (oldest first), then technique (summarise), then house style (never — it is short).
+
+---
+
+### The journal storage problem
+
+The kitchen journal is append-only and stored in localStorage (~5MB limit). It grows with every recipe run.
+
+**Tentative policy**: keep the most recent 100 entries per card type, or entries from the last 30 days, whichever is smaller. Prune on write.
+
+---
+
+### The house style editing problem
+
+How does Maria set her house style? A free-text field? A structured form? The sous chef interviews her and generates it?
+
+**Not yet decided.** This is a UX problem. The simplest v4 approach is a free-text field in the kitchen settings. A sous-chef-guided interview would be better but adds complexity.
+
+---
+
+### The correction detection problem
+
+When Maria edits a composed message before sending, how does the system know what she changed? The Send Message card shows the composed message for review — if Maria changes it, we can diff the original against her edit. But if she edits in her email app (after clicking the mailto: link), we have no visibility.
+
+**v4 decision**: only capture corrections made within AICard's review panel. Edits made outside AICard are invisible. This is honest and avoids invasive tracking.
 
 ---
 

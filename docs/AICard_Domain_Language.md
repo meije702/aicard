@@ -56,6 +56,28 @@ A one-sentence description of what a recipe does, written from the user's perspe
 
 The `.card.md` file that defines a card type. It specifies what the card does, what equipment it needs, and what configuration it accepts.
 
+### Technique
+
+The structured knowledge that makes the sous chef competent at a specific card. A technique lives in the `.card.md` file and defines the card's voice, constraints, and expertise. When the sous chef executes a card, the technique is injected into its prompt.
+
+In the broader LLM ecosystem, a card is an *agent skill* and a technique is what teaches the agent how to use that skill well.
+
+**Not**: skill, prompt, instruction, personality, behavior
+
+### House style
+
+The user's voice and preferences, stored in the kitchen. House style is injected into every card that generates text. Example: "informal tone, use first names, sign off with 'Warme groet, Maria'."
+
+A restaurant has a house style — the way *this* kitchen does things. So does an AICard kitchen.
+
+**Not**: preferences, settings, voice profile, persona
+
+### Kitchen journal
+
+An append-only log of what happened during recipe runs. Records events, user corrections, and approvals. The sous chef uses recent journal entries as few-shot examples — corrections from past runs improve future ones.
+
+**Not**: event log, audit trail, history, ledger
+
 ---
 
 ## Recipe file terms
@@ -127,3 +149,6 @@ A recipe that has finished all steps successfully.
 | pantry | library, marketplace, registry |
 | sous chef | assistant, agent, copilot, bot |
 | purpose | description, summary (in recipe context) |
+| technique | skill, prompt, instruction |
+| house style | preferences, voice profile, persona |
+| kitchen journal | event log, audit trail, history |

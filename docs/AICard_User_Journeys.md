@@ -38,6 +38,29 @@ These are the step-by-step experiences we are building toward. Each journey is d
 
 ---
 
+## v4 — Personalised messages
+
+**Maria's third month**
+
+1. Maria has been running the thank-you recipe for weeks. It works, but the messages sound generic — "Dear Customer, thank you for your purchase." She wants them to sound like *her*.
+2. She opens her kitchen settings and sees a new section: "House style." The sous chef offers to help: "Tell me a bit about how you write — your tone, your language, how you sign off."
+3. Maria types: "I'm informal and warm. I use first names. I always thank people for their specific order. I sign off with 'Warme groet, Maria'. Keep it short — three or four sentences."
+4. She runs the recipe. A new order comes in from Emma who bought a spring bouquet.
+5. Step 3 fires. Instead of "Dear Customer, thank you for your purchase," the sous chef composes: "Hoi Emma, Thanks so much for ordering the spring bouquet! I hope it's bringing some colour to your week. Warme groet, Maria"
+6. Maria reads it, changes "colour" to "kleur" — she prefers mixing in a little Dutch. She sends it.
+7. The kitchen journal records the correction: the sous chef wrote "colour", Maria changed it to "kleur".
+8. Next week, another order. The sous chef composes the message — this time it writes "kleur" without being told. Maria sends it without changes.
+9. Over time, Maria edits less. The sous chef learns her voice from her corrections, not from training — just from seeing what she changed last time.
+
+### What success looks like at v4
+
+- Maria's messages sound like her, not like a generic AI.
+- She set her house style once and it applies everywhere.
+- She never had to explain "fine-tuning" or "training" — she just corrected a few messages and the system improved.
+- The same technique works regardless of which AI provider she connected as her sous chef.
+
+---
+
 ## The sous chef's two surfaces
 
 ### The chef's hat
