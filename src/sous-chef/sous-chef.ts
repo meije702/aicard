@@ -5,13 +5,19 @@
 //
 // The sous chef speaks recipe language. Never technical language.
 
-import type { Recipe, Kitchen, SousChefConfig } from '../types.ts'
+import type { Recipe, Kitchen, SousChefConfig, EquipmentDefinition, WizardStepResponse } from '../types.ts'
 import { checkRecipeReadiness, recipeHasWaitSteps } from '../runner/recipe-readiness.ts'
 import {
   SOUS_CHEF_SYSTEM_PROMPT,
   buildReadinessContext,
   buildStepContext,
 } from './prompts.ts'
+import {
+  buildEquipmentStepPrompt,
+  buildFallbackStepResponse,
+  EQUIPMENT_SETUP_SYSTEM_SUFFIX,
+} from './equipment-prompts.ts'
+import { parseWizardStepResponse } from '../parser/wizard-response-parser.ts'
 import { sousChefAsk } from './client.ts'
 
 // Parse the model's response into a clean list of option strings.
@@ -132,6 +138,32 @@ Respond with ONLY a JSON object in this exact format, no other text:
 
       const response = await ask(config, prompt)
       return extractOptions(response)
+    },
+
+    // Guide the user through one step of equipment setup.
+    // Returns a WizardStepResponse (structured JSON) for the wizard UI.
+    // Falls back to the .equipment.md content if the model returns bad JSON.
+    async guideEquipmentStep(
+      equipmentDef: EquipmentDefinition,
+      stepNumber: number,
+      collectedConfig: Record<string, string>,
+    ): Promise<WizardStepResponse> {
+      const prompt = buildEquipmentStepPrompt(equipmentDef, stepNumber, collectedConfig)
+      const systemPrompt = SOUS_CHEF_SYSTEM_PROMPT + '\n\n' + EQUIPMENT_SETUP_SYSTEM_SUFFIX
+
+      try {
+        const raw = await sousChefAsk(config, systemPrompt, prompt)
+        const { response, errors } = parseWizardStepResponse(raw)
+
+        // If parsing produced errors but we still got an instruction, use it
+        if (errors.length > 0 && !response.instruction) {
+          return buildFallbackStepResponse(equipmentDef, stepNumber)
+        }
+        return response
+      } catch {
+        // Model unreachable — use the .equipment.md content directly
+        return buildFallbackStepResponse(equipmentDef, stepNumber)
+      }
     },
 
     // Answer a free-form question from the user.

@@ -78,6 +78,12 @@ export interface Equipment {
   // 'handoff': prepares something for Maria to send/complete herself (e.g. mailto:)
   // Defaults to 'full' when not set — backwards-compatible with existing localStorage data.
   mode?: 'full' | 'handoff'
+  // Resumable setup: tracks where the user left off in the wizard
+  pendingSetup?: {
+    step: number
+    startedAt: string                     // ISO 8601
+    collectedConfig: Record<string, string>
+  }
 }
 
 // The result of checking whether the kitchen has what a card needs
@@ -157,4 +163,58 @@ export interface PromptContext {
   houseStyle?: string
   recentCorrections: JournalEntry[]
   stepContext: string
+}
+
+// --- Equipment definition types (parsed from .equipment.md files) ---
+
+export interface DocumentationLink {
+  label: string
+  url: string
+}
+
+export interface EquipmentStep {
+  number: number
+  title: string
+  instructions: string   // markdown body of the step
+}
+
+export interface EquipmentConfigField {
+  name: string
+  description: string
+  validate?: string       // simple validation rule, e.g. "starts-with shpat_"
+}
+
+// The parsed structure of an .equipment.md file
+export interface EquipmentDefinition {
+  name: string
+  purpose: string
+  mode: 'api-key' | 'compose'
+  documentation: DocumentationLink[]
+  steps: EquipmentStep[]
+  configFields: EquipmentConfigField[]
+  technique?: Technique
+  errors: string[]         // parser errors — never throw, always accumulate
+}
+
+// --- Wizard types (sous chef-guided equipment setup) ---
+
+// The field types the sous chef can request in a wizard step
+export type WizardFieldType = 'text' | 'password' | 'select' | 'info' | 'confirm'
+
+// A single dynamic field the wizard should render
+export interface WizardFieldSpec {
+  key: string
+  type: WizardFieldType
+  label: string
+  placeholder?: string
+  defaultValue?: string
+  options?: string[]      // for 'select' type only
+  required?: boolean
+}
+
+// What the sous chef returns for each wizard step
+export interface WizardStepResponse {
+  instruction: string
+  fields: WizardFieldSpec[]
+  canAdvance: boolean
 }

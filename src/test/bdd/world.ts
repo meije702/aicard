@@ -6,6 +6,8 @@ import type {
   CardDefinition,
   Kitchen,
   CardResult,
+  EquipmentDefinition,
+  WizardStepResponse,
 } from '../../types.ts'
 import type { RunState } from '../../runner/recipe-runner.ts'
 
@@ -16,6 +18,7 @@ export class World {
   // Parsed objects
   recipe: Recipe | null = null
   cardDefinition: CardDefinition | null = null
+  equipmentDefinition: EquipmentDefinition | null = null
 
   // Kitchen state
   kitchen: Kitchen = { equipment: [], recipes: [], pantry: [] }
@@ -24,6 +27,9 @@ export class World {
   runState: RunState | null = null
   cardResult: CardResult | null = null
   error: Error | null = null
+
+  // Wizard state
+  wizardStepResponse: WizardStepResponse | null = null
 
   // Timing
   startedAt: number | null = null

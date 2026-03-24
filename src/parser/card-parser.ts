@@ -2,6 +2,7 @@
 // See docs/AICard_Card_Format.md for the format specification.
 
 import type { CardDefinition, CardType, CardEquipmentRequirement, CardConfigField, Technique } from '../types.ts'
+import { extractSection, extractSubsections } from './section-helpers.ts'
 
 export function parseCard(markdown: string): CardDefinition {
   const lines = markdown.split('\n')
@@ -103,53 +104,6 @@ function parseTechnique(lines: string[]): Technique | undefined {
   return { voice, constraints, expertise }
 }
 
-// Extract ### subsections from a set of lines into a name→content map.
-// Subsection names are normalised to lowercase.
-function extractSubsections(lines: string[]): Record<string, string> {
-  const result: Record<string, string> = {}
-  let currentName = ''
-  const contentLines: string[] = []
-
-  function flush() {
-    if (currentName) {
-      result[currentName] = contentLines.join('\n').trim()
-    }
-  }
-
-  for (const line of lines) {
-    const headingMatch = line.match(/^###\s+(.+)$/)
-    if (headingMatch) {
-      flush()
-      currentName = headingMatch[1].trim().toLowerCase()
-      contentLines.length = 0
-    } else if (currentName) {
-      contentLines.push(line)
-    }
-  }
-  flush()
-
-  return result
-}
-
-// Extract the lines belonging to a named section (up to the next ## heading).
-// Case-insensitive: "## equipment" and "## EQUIPMENT" both match "## Equipment".
-function extractSection(lines: string[], heading: string): string[] {
-  const result: string[] = []
-  let inSection = false
-
-  for (const line of lines) {
-    if (line.trim().toLowerCase() === heading.toLowerCase()) {
-      inSection = true
-      continue
-    }
-    if (inSection && /^##\s/.test(line) && line.trim().toLowerCase() !== heading.toLowerCase()) {
-      break
-    }
-    if (inSection) result.push(line)
-  }
-
-  return result
-}
 
 // Normalise a card type name to lowercase-hyphenated
 function normaliseCardType(name: string): CardType {

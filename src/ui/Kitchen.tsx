@@ -29,8 +29,9 @@ function equipmentIcon(name: string): string {
   return '🔌'
 }
 
-export default function Kitchen({ kitchen, onOpenRecipe, onOpenKitchenRecipe, sousChefSetup, onSousChefSetupChange, onHouseStyleChange }: Props) {
+export default function Kitchen({ kitchen, onOpenRecipe, onOpenKitchenRecipe, onConnectEquipment, sousChefSetup, onSousChefSetupChange, onHouseStyleChange }: Props) {
   const connectedEquipment = kitchen.equipment.filter(e => e.connected)
+  const pendingEquipment = kitchen.equipment.filter(e => !e.connected && e.pendingSetup)
   const isConnected = sousChefSetup.active !== null
   const activeProvider = isConnected ? getProvider(sousChefSetup.active!) : null
   // Collapse the setup UI after initial config — Finding 10
@@ -108,7 +109,7 @@ export default function Kitchen({ kitchen, onOpenRecipe, onOpenKitchenRecipe, so
       {/* Equipment */}
       <section className={styles.sectionCard} aria-label="Connected equipment">
         <div className={styles.sectionLabel}>Equipment</div>
-        {connectedEquipment.length === 0 ? (
+        {connectedEquipment.length === 0 && pendingEquipment.length === 0 ? (
           <p className={styles.emptyState}>
             No equipment connected yet. When you open a recipe, you'll be able to connect
             the services it needs.
@@ -124,6 +125,23 @@ export default function Kitchen({ kitchen, onOpenRecipe, onOpenKitchenRecipe, so
                 <span className={styles.equipmentStatus}>
                   <span className={styles.statusDot} aria-hidden="true" />
                   Connected
+                </span>
+              </div>
+            ))}
+            {pendingEquipment.map(e => (
+              <div
+                key={e.name}
+                className={styles.equipmentCard}
+                role="listitem"
+                style={{ cursor: 'pointer' }}
+                onClick={() => onConnectEquipment(e.name)}
+              >
+                <div className={styles.equipmentIcon} aria-hidden="true">
+                  {equipmentIcon(e.name)}
+                </div>
+                <span className={styles.equipmentName}>{e.name}</span>
+                <span className={styles.equipmentStatus} style={{ color: 'var(--status-warning)' }}>
+                  Resume setup
                 </span>
               </div>
             ))}

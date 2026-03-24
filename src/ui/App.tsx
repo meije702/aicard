@@ -6,11 +6,12 @@ import { loadKitchen, saveKitchen, upsertEquipment, upsertRecipe, setHouseStyle 
 import { appendJournalEntry } from '../kitchen/journal.ts'
 import thankYouRecipeMd from '../fixtures/recipes/thank-you-follow-up.recipe.md?raw'
 import { createEquipment } from '../kitchen/equipment.ts'
+import { getEquipmentDefinition } from '../fixtures/equipment/index.ts'
 import { loadSousChefSetup, saveSousChefSetup, deriveActiveConfig } from './sous-chef-storage.ts'
 import Kitchen from './Kitchen.tsx'
 import RecipeView from './RecipeView.tsx'
 import SousChef from './SousChef.tsx'
-import EquipmentConnect from './EquipmentConnect.tsx'
+import EquipmentWizard from './wizard/EquipmentWizard.tsx'
 import styles from './App.module.css'
 
 type Screen = 'kitchen' | 'recipe'
@@ -101,9 +102,22 @@ export default function App() {
     // rather than acting autonomously — mark it as 'handoff' so the UI can be
     // honest about what it can do (Finding 3).
     const mode: 'full' | 'handoff' = config.mode === 'compose' ? 'handoff' : 'full'
-    const connected = { ...equipment, connected: true, config, mode }
+    // Clear pendingSetup on connect (wizard completed)
+    const connected = { ...equipment, connected: true, config, mode, pendingSetup: undefined }
     persistKitchen(upsertEquipment(kitchen, connected))
     setConnectingEquipment(null)
+  }
+
+  function handleSetupProgress(step: number, collectedConfig: Record<string, string>) {
+    if (!connectingEquipment) return
+    const existing = kitchen.equipment.find(
+      e => e.name.toLowerCase() === connectingEquipment.toLowerCase()
+    ) ?? createEquipment(connectingEquipment, connectingEquipment.toLowerCase())
+    const updated = {
+      ...existing,
+      pendingSetup: { step, startedAt: existing.pendingSetup?.startedAt ?? new Date().toISOString(), collectedConfig },
+    }
+    persistKitchen(upsertEquipment(kitchen, updated))
   }
 
   return (
@@ -190,14 +204,24 @@ export default function App() {
         </div>
       )}
 
-      {/* Equipment connection dialog */}
-      {connectingEquipment && (
-        <EquipmentConnect
-          equipmentName={connectingEquipment}
-          onConnect={handleEquipmentConnected}
-          onCancel={() => setConnectingEquipment(null)}
-        />
-      )}
+      {/* Equipment setup wizard */}
+      {connectingEquipment && (() => {
+        const def = getEquipmentDefinition(connectingEquipment)
+        const existing = kitchen.equipment.find(
+          e => e.name.toLowerCase() === connectingEquipment.toLowerCase()
+        )
+        return (
+          <EquipmentWizard
+            equipmentName={connectingEquipment}
+            equipmentDefinition={def ?? null}
+            sousChefConfig={activeSousChefConfig}
+            onConnect={handleEquipmentConnected}
+            onCancel={() => setConnectingEquipment(null)}
+            pendingSetup={existing?.pendingSetup}
+            onSetupProgress={handleSetupProgress}
+          />
+        )
+      })()}
 
     </div>
   )
