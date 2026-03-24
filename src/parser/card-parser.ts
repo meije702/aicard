@@ -1,7 +1,7 @@
 // Parse a .card.md file into a CardDefinition object.
 // See docs/AICard_Card_Format.md for the format specification.
 
-import type { CardDefinition, CardType, CardEquipmentRequirement, CardConfigField } from '../types.ts'
+import type { CardDefinition, CardType, CardEquipmentRequirement, CardConfigField, Technique } from '../types.ts'
 
 export function parseCard(markdown: string): CardDefinition {
   const lines = markdown.split('\n')
@@ -11,8 +11,9 @@ export function parseCard(markdown: string): CardDefinition {
   const purpose = parsePurpose(lines)
   const equipment = parseEquipment(lines)
   const configFields = parseConfigFields(lines)
+  const technique = parseTechnique(lines)
 
-  return { name, type, purpose, equipment, configFields }
+  return { name, type, purpose, equipment, configFields, technique }
 }
 
 // Parse the card name from the first # heading
@@ -82,6 +83,52 @@ function parseConfigFields(lines: string[]): CardConfigField[] {
   flush()
 
   return fields
+}
+
+// Parse the optional ## Technique section into a Technique object.
+// Technique has three subsections: ### Voice, ### Constraints, ### Expertise.
+// Returns undefined when the section is absent.
+function parseTechnique(lines: string[]): Technique | undefined {
+  const sectionLines = extractSection(lines, '## Technique')
+  if (sectionLines.length === 0) return undefined
+
+  const subsections = extractSubsections(sectionLines)
+  const voice = subsections['voice'] ?? ''
+  const constraints = subsections['constraints'] ?? ''
+  const expertise = subsections['expertise'] ?? ''
+
+  // Only return a technique if at least one subsection has content
+  if (!voice && !constraints && !expertise) return undefined
+
+  return { voice, constraints, expertise }
+}
+
+// Extract ### subsections from a set of lines into a name→content map.
+// Subsection names are normalised to lowercase.
+function extractSubsections(lines: string[]): Record<string, string> {
+  const result: Record<string, string> = {}
+  let currentName = ''
+  const contentLines: string[] = []
+
+  function flush() {
+    if (currentName) {
+      result[currentName] = contentLines.join('\n').trim()
+    }
+  }
+
+  for (const line of lines) {
+    const headingMatch = line.match(/^###\s+(.+)$/)
+    if (headingMatch) {
+      flush()
+      currentName = headingMatch[1].trim().toLowerCase()
+      contentLines.length = 0
+    } else if (currentName) {
+      contentLines.push(line)
+    }
+  }
+  flush()
+
+  return result
 }
 
 // Extract the lines belonging to a named section (up to the next ## heading).

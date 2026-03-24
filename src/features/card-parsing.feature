@@ -32,3 +32,22 @@ Feature: Card definition parsing
     When I parse the card definition
     Then the card name should be "Send Message"
     And the card type should be "send-message"
+
+  Scenario: Send Message card has a technique
+    Given a card file "pantry/send-message.card.md"
+    When I parse the card definition
+    Then the card should have a technique
+    And the technique voice should contain "compose messages"
+    And the technique constraints should contain "150 words"
+    And the technique expertise should contain "email etiquette"
+
+  Scenario: Listen card has a technique
+    Given a card file "pantry/listen.card.md"
+    When I parse the card definition
+    Then the card should have a technique
+    And the technique voice should contain "capturing event details"
+
+  Scenario: Wait card has no technique
+    Given a card file "pantry/wait.card.md"
+    When I parse the card definition
+    Then the card should not have a technique

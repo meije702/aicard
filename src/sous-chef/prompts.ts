@@ -3,6 +3,8 @@
 // It knows about kitchens, recipes, cards, and equipment.
 // It does not know about APIs, webhooks, or JSON.
 
+import type { PromptContext } from '../types.ts'
+
 export const SOUS_CHEF_SYSTEM_PROMPT = `You are a friendly kitchen assistant who helps people run their recipes.
 
 You know about:
@@ -59,4 +61,39 @@ export function buildStepContext(
 Card type: ${cardType}
 Settings:
 ${configLines || '  (none)'}`
+}
+
+// Render a PromptContext into the user message for the sous chef.
+// Assembly order: technique → house style → corrections → step context.
+// See docs/AICard_Techniques.md for the design.
+export function renderCardPrompt(context: PromptContext): string {
+  const sections: string[] = []
+
+  if (context.technique) {
+    const t = context.technique
+    const parts: string[] = []
+    if (t.voice) parts.push(`### Voice\n${t.voice}`)
+    if (t.constraints) parts.push(`### Constraints\n${t.constraints}`)
+    if (t.expertise) parts.push(`### Expertise\n${t.expertise}`)
+    if (parts.length > 0) {
+      sections.push(`## Technique\n\n${parts.join('\n\n')}`)
+    }
+  }
+
+  if (context.houseStyle) {
+    sections.push(`## House style\n\n${context.houseStyle}`)
+  }
+
+  if (context.recentCorrections.length > 0) {
+    const examples = context.recentCorrections.map((c, i) => {
+      const before = c.before ?? '(unknown)'
+      const after = c.after ?? '(unknown)'
+      return `${i + 1}. You wrote: "${before}"\n   User changed to: "${after}"`
+    })
+    sections.push(`## Recent corrections (learn from these)\n\n${examples.join('\n\n')}`)
+  }
+
+  sections.push(context.stepContext)
+
+  return sections.join('\n\n---\n\n')
 }

@@ -9,7 +9,7 @@ const CARD_LABELS: Record<string, string> = {
   wait: 'Wait',
   'send-message': 'Send Message',
 }
-import type { Recipe, Kitchen as KitchenType } from '../types.ts'
+import type { Recipe, Kitchen as KitchenType, JournalEntry } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import type { StepInteraction as StepInteractionType } from '../cards/card-executor.ts'
 import { runRecipe, defaultExecutors } from '../runner/recipe-runner.ts'
@@ -29,6 +29,7 @@ interface Props {
   onBack: () => void
   onConnectEquipment: (name: string) => void
   onRunStateChange?: (state: RunState | null) => void
+  onJournalEntry?: (entry: JournalEntry) => void
 }
 
 function equipmentIcon(name: string): string {
@@ -49,7 +50,7 @@ interface PendingInteraction {
   resolve: (values: Record<string, string>) => void
 }
 
-export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment, onRunStateChange }: Props) {
+export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment, onRunStateChange, onJournalEntry }: Props) {
   // Hydrate from localStorage — if this recipe was mid-run when the tab closed,
   // we show the last known state and offer to restart or start fresh.
   const [runState, setRunState] = useState<RunState | null>(() => runStateRepo.load(recipe.name))
@@ -69,6 +70,8 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
   // handleConfigSave so the runner sees tweaked configs immediately, without
   // waiting for the async React state update to flush.
   const activeRecipeRef = useRef<typeof activeRecipe>(activeRecipe)
+  // Track which steps have been logged to the journal to avoid duplicate entries
+  const loggedStepsRef = useRef<Set<number>>(new Set())
   // Tracks descriptions Maria has seen after tweaking pending steps. The runner's
   // onStateChange overwrites React state on every step transition; this ref lets us
   // re-apply the tweaked description so it stays visible until the step starts running
@@ -96,12 +99,38 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
 
   // Handle user submitting an interaction form (e.g., confirming a new order)
   const handleInteractionSubmit = useCallback((values: Record<string, string>) => {
+    // Log correction/approval to the kitchen journal
+    if (onJournalEntry && pendingInteraction) {
+      const { stepIndex, interaction } = pendingInteraction
+      const recipeStep = activeRecipe.steps[stepIndex]
+      const cardType = recipeStep && 'card' in recipeStep ? recipeStep.card : undefined
+      if (cardType && interaction.fields) {
+        // Check if the user changed any field from its default
+        const editableFields = interaction.fields.filter(f => !f.readOnly)
+        for (const field of editableFields) {
+          const original = field.defaultValue ?? ''
+          const submitted = values[field.key] ?? ''
+          if (original !== submitted) {
+            onJournalEntry({
+              timestamp: new Date().toISOString(),
+              recipe: activeRecipe.name,
+              step: stepIndex + 1,
+              card: cardType,
+              type: 'corrected',
+              before: original,
+              after: submitted,
+            })
+          }
+        }
+      }
+    }
+
     if (interactionResolveRef.current) {
       interactionResolveRef.current(values)
       interactionResolveRef.current = null
     }
     setPendingInteraction(null)
-  }, [])
+  }, [onJournalEntry, pendingInteraction, activeRecipe])
 
   function handleStop() {
     cancelRef.current = true
@@ -118,6 +147,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
     runStateRepo.clearAll(activeRecipe.name)
     cancelRef.current = false
     tweakedDescriptionsRef.current = {}
+    loggedStepsRef.current = new Set()
     setIsRunning(true)
     setRunState(null)
     setPendingInteraction(null)
@@ -141,6 +171,25 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
         setRunState({ ...state, steps: mergedSteps })
         // Persist the authoritative runner state (without UI overrides)
         runStateRepo.save(state)
+        // Log completed steps to the kitchen journal
+        if (onJournalEntry) {
+          for (const step of state.steps) {
+            if (step.status === 'complete' && !loggedStepsRef.current.has(step.number)) {
+              loggedStepsRef.current.add(step.number)
+              const recipeStep = activeRecipe.steps[step.number - 1]
+              const cardType = recipeStep && 'card' in recipeStep ? recipeStep.card : undefined
+              if (cardType) {
+                onJournalEntry({
+                  timestamp: new Date().toISOString(),
+                  recipe: activeRecipe.name,
+                  step: step.number,
+                  card: cardType,
+                  type: 'executed',
+                })
+              }
+            }
+          }
+        }
       },
       // Interaction callback: when an executor needs user input, we surface
       // the request as a form inside the step card and wait for submission.

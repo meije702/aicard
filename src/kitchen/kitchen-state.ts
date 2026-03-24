@@ -82,6 +82,11 @@ export function upsertRecipe(kitchen: Kitchen, recipe: Recipe): Kitchen {
   return { ...kitchen, recipes: updated }
 }
 
+// Set the kitchen's house style — the user's voice and preferences.
+export function setHouseStyle(kitchen: Kitchen, houseStyle: string): Kitchen {
+  return { ...kitchen, houseStyle }
+}
+
 // Add a card definition to the pantry.
 // Card definitions are identified by type.
 export function upsertCardDefinition(kitchen: Kitchen, card: CardDefinition): Kitchen {

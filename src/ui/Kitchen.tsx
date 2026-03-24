@@ -1,7 +1,7 @@
 // The main kitchen view — Maria's first impression.
 // This needs to feel warm, inviting, and clear — not like a settings panel.
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { Kitchen as KitchenType, Recipe, SousChefSetup } from '../types.ts'
 import { getProvider } from '../sous-chef/providers.ts'
 import SousChefProviders from './SousChefProviders.tsx'
@@ -14,6 +14,7 @@ interface Props {
   onConnectEquipment: (name: string) => void
   sousChefSetup: SousChefSetup
   onSousChefSetupChange: (setup: SousChefSetup) => void
+  onHouseStyleChange: (houseStyle: string) => void
 }
 
 // Map equipment names to friendly icons
@@ -28,12 +29,15 @@ function equipmentIcon(name: string): string {
   return '🔌'
 }
 
-export default function Kitchen({ kitchen, onOpenRecipe, onOpenKitchenRecipe, sousChefSetup, onSousChefSetupChange }: Props) {
+export default function Kitchen({ kitchen, onOpenRecipe, onOpenKitchenRecipe, sousChefSetup, onSousChefSetupChange, onHouseStyleChange }: Props) {
   const connectedEquipment = kitchen.equipment.filter(e => e.connected)
   const isConnected = sousChefSetup.active !== null
   const activeProvider = isConnected ? getProvider(sousChefSetup.active!) : null
   // Collapse the setup UI after initial config — Finding 10
   const [setupExpanded, setSetupExpanded] = useState(!isConnected)
+  const [houseStyleDraft, setHouseStyleDraft] = useState(kitchen.houseStyle ?? '')
+  const houseStyleDirty = houseStyleDraft !== (kitchen.houseStyle ?? '')
+  const houseStyleRef = useRef<HTMLTextAreaElement>(null)
 
   return (
     <div className={styles.container}>
@@ -123,6 +127,41 @@ export default function Kitchen({ kitchen, onOpenRecipe, onOpenKitchenRecipe, so
                 </span>
               </div>
             ))}
+          </div>
+        )}
+      </section>
+
+      {/* House Style */}
+      <section className={styles.sectionCard} aria-label="House style">
+        <div className={styles.sectionLabel}>House Style</div>
+        {!kitchen.houseStyle && !houseStyleDirty ? (
+          <p className={styles.emptyState}>
+            Tell your sous chef how you write — your tone, your language, how you sign off.
+            This shapes every message your recipes compose.
+          </p>
+        ) : null}
+        <textarea
+          ref={houseStyleRef}
+          className={styles.houseStyleTextarea}
+          placeholder="e.g. I'm informal and warm. I use first names. I sign off with 'Warme groet, Maria'. Keep emails short."
+          value={houseStyleDraft}
+          onChange={e => setHouseStyleDraft(e.target.value)}
+          rows={4}
+        />
+        {houseStyleDirty && (
+          <div className={styles.houseStyleActions}>
+            <button
+              className={styles.houseStyleSave}
+              onClick={() => onHouseStyleChange(houseStyleDraft)}
+            >
+              Save
+            </button>
+            <button
+              className={styles.houseStyleCancel}
+              onClick={() => setHouseStyleDraft(kitchen.houseStyle ?? '')}
+            >
+              Cancel
+            </button>
           </div>
         )}
       </section>

@@ -2,7 +2,8 @@ import { useState } from 'react'
 import type { Recipe, SousChefSetup } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import { parseRecipe } from '../parser/recipe-parser.ts'
-import { loadKitchen, saveKitchen, upsertEquipment, upsertRecipe } from '../kitchen/kitchen-state.ts'
+import { loadKitchen, saveKitchen, upsertEquipment, upsertRecipe, setHouseStyle } from '../kitchen/kitchen-state.ts'
+import { appendJournalEntry } from '../kitchen/journal.ts'
 import thankYouRecipeMd from '../fixtures/recipes/thank-you-follow-up.recipe.md?raw'
 import { createEquipment } from '../kitchen/equipment.ts'
 import { loadSousChefSetup, saveSousChefSetup, deriveActiveConfig } from './sous-chef-storage.ts'
@@ -139,6 +140,11 @@ export default function App() {
             onConnectEquipment={handleConnectEquipment}
             sousChefSetup={sousChefSetup}
             onSousChefSetupChange={handleSousChefSetupChange}
+            onHouseStyleChange={(style) => {
+              const updated = setHouseStyle(kitchen, style)
+              setKitchen(updated)
+              saveKitchen(updated)
+            }}
           />
         )}
 
@@ -149,6 +155,11 @@ export default function App() {
             onBack={() => { setScreen('kitchen'); setActiveRunState(null) }}
             onConnectEquipment={handleConnectEquipment}
             onRunStateChange={setActiveRunState}
+            onJournalEntry={(entry) => {
+              const updated = appendJournalEntry(kitchen, entry)
+              setKitchen(updated)
+              saveKitchen(updated)
+            }}
           />
         )}
       </main>

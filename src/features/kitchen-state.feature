@@ -26,6 +26,15 @@ Feature: Kitchen state management
     And I remove equipment "Shopify"
     Then the kitchen should have 1 pieces of equipment
 
+  Scenario: Kitchen starts without a house style
+    Given a new kitchen
+    Then the kitchen should not have a house style
+
+  Scenario: Set house style on kitchen
+    Given a new kitchen
+    When I set the house style to "Warm and informal. Sign off with Warme groet."
+    Then the kitchen house style should be "Warm and informal. Sign off with Warme groet."
+
   Scenario: Add a recipe to the kitchen
     Given a new kitchen
     And a recipe file "recipes/thank-you-follow-up.recipe.md"

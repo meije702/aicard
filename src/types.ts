@@ -101,6 +101,16 @@ export interface Kitchen {
   equipment: Equipment[]
   recipes: Recipe[]
   pantry: CardDefinition[]
+  houseStyle?: string        // the user's voice and preferences — see docs/AICard_Techniques.md
+  journal?: JournalEntry[]   // append-only kitchen journal — see docs/AICard_Techniques.md
+}
+
+// The structured knowledge that makes the sous chef competent at a specific card.
+// See docs/AICard_Techniques.md for the design.
+export interface Technique {
+  voice: string
+  constraints: string
+  expertise: string
 }
 
 // The parsed structure of a .card.md file
@@ -110,6 +120,7 @@ export interface CardDefinition {
   purpose: string
   equipment: CardEquipmentRequirement[]
   configFields: CardConfigField[]
+  technique?: Technique
 }
 
 export interface CardEquipmentRequirement {
@@ -120,4 +131,30 @@ export interface CardEquipmentRequirement {
 export interface CardConfigField {
   name: string           // normalised lowercase key
   description: string
+}
+
+// --- Kitchen journal types ---
+
+export type JournalEntryType = 'executed' | 'corrected' | 'approved'
+
+// An entry in the kitchen journal — the sous chef's memory.
+export interface JournalEntry {
+  timestamp: string        // ISO 8601
+  recipe: string           // recipe name
+  step: number             // step number
+  card: CardType           // card type
+  type: JournalEntryType
+  before?: string          // original output (for corrections)
+  after?: string           // corrected output (for corrections)
+}
+
+// --- Prompt context (DIP: sous chef receives this, never looks up kitchen internals) ---
+
+// All the context the sous chef needs for one card execution.
+// Built by buildPromptContext() — the single assembly point.
+export interface PromptContext {
+  technique?: Technique
+  houseStyle?: string
+  recentCorrections: JournalEntry[]
+  stepContext: string
 }

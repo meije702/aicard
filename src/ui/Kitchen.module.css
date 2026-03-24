@@ -51,6 +51,8 @@
 .sectionCard:nth-child(1) { animation-delay: 0ms; }
 .sectionCard:nth-child(2) { animation-delay: 80ms; }
 .sectionCard:nth-child(3) { animation-delay: 160ms; }
+.sectionCard:nth-child(4) { animation-delay: 240ms; }
+.sectionCard:nth-child(5) { animation-delay: 320ms; }
 
 .sectionLabel {
   font-size: var(--text-xs);
@@ -258,6 +260,73 @@
   color: var(--text-tertiary);
   line-height: var(--leading-relaxed);
   padding: var(--space-2) 0;
+}
+
+/* --- House style --- */
+.houseStyleTextarea {
+  width: 100%;
+  border: 1.5px solid var(--surface-mid);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  font-family: var(--font-body);
+  background: var(--surface-lightest);
+  color: var(--text-primary);
+  line-height: var(--leading-relaxed);
+  resize: vertical;
+  transition: border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.houseStyleTextarea::placeholder {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.houseStyleTextarea:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-primary-subtle);
+  outline: none;
+}
+
+.houseStyleActions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  justify-content: flex-end;
+}
+
+.houseStyleSave {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--surface-lightest);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.houseStyleSave:hover {
+  opacity: 0.9;
+}
+
+.houseStyleCancel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-tertiary);
+  background: none;
+  border: 1px solid var(--surface-mid);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.houseStyleCancel:hover {
+  color: var(--text-primary);
+  border-color: var(--surface-dark);
 }
 
 /* --- Recipe drop zone --- */

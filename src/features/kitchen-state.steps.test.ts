@@ -2,7 +2,7 @@
 
 import { Given, When, Then } from '../test/bdd/step-registry.ts'
 import { runFeature } from '../test/bdd/runner.ts'
-import { upsertEquipment, removeEquipment, upsertRecipe } from '../kitchen/kitchen-state.ts'
+import { upsertEquipment, removeEquipment, upsertRecipe, setHouseStyle } from '../kitchen/kitchen-state.ts'
 import { parseRecipe } from '../parser/recipe-parser.ts'
 import { loadFixture } from '../test/helpers/fixture-loader.ts'
 import { assertEquals, assertExists } from 'jsr:@std/assert'
@@ -47,6 +47,18 @@ Then('the kitchen should have {int} pieces of equipment', (world: World, count: 
 
 Then('the kitchen should have {int} recipes', (world: World, count: string) => {
   assertEquals(world.kitchen.recipes.length, parseInt(count))
+})
+
+When('I set the house style to {string}', (world: World, style: string) => {
+  world.kitchen = setHouseStyle(world.kitchen, style)
+})
+
+Then('the kitchen should not have a house style', (world: World) => {
+  assertEquals(world.kitchen.houseStyle, undefined)
+})
+
+Then('the kitchen house style should be {string}', (world: World, expected: string) => {
+  assertEquals(world.kitchen.houseStyle, expected)
 })
 
 // Run the feature file
