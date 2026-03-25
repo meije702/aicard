@@ -23,7 +23,11 @@ export const localStorageRunStateRepository: RunStateRepository = {
   // overwrite each other. load() scans for the most recent matching entry.
   save(state: RunState): void {
     if (typeof localStorage === 'undefined') return
-    localStorage.setItem(RUN_STATE_PREFIX + state.runId, JSON.stringify(state))
+    try {
+      localStorage.setItem(RUN_STATE_PREFIX + state.runId, JSON.stringify(state))
+    } catch (e) {
+      console.warn('Failed to save run state:', e)
+    }
   },
 
   // Return the most recently started run for the given recipe name, or null.
@@ -56,7 +60,11 @@ export const localStorageRunStateRepository: RunStateRepository = {
   // not every run with the same recipe name.
   clear(runId: string): void {
     if (typeof localStorage === 'undefined') return
-    localStorage.removeItem(RUN_STATE_PREFIX + runId)
+    try {
+      localStorage.removeItem(RUN_STATE_PREFIX + runId)
+    } catch (e) {
+      console.warn('Failed to clear run state:', e)
+    }
   },
 
   // Remove all saved run states for the given recipe name.
@@ -78,7 +86,7 @@ export const localStorageRunStateRepository: RunStateRepository = {
       }
     }
     for (const key of toRemove) {
-      localStorage.removeItem(key)
+      try { localStorage.removeItem(key) } catch { /* best-effort cleanup */ }
     }
   },
 }

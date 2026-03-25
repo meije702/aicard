@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import type { Recipe, SousChefSetup } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import { parseRecipe } from '../parser/recipe-parser.ts'
@@ -39,17 +39,18 @@ export default function App() {
   })
   const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme)
 
+  // useLayoutEffect runs synchronously before paint, preventing a theme flash
+  // on initial load. useEffect would apply after paint, briefly showing the
+  // wrong theme on first render.
+  useLayoutEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
+
   function toggleTheme() {
     const next = theme === 'light' ? 'dark' : 'light'
     setTheme(next)
-    document.documentElement.setAttribute('data-theme', next)
-    localStorage.setItem('aicard:theme', next)
+    try { localStorage.setItem('aicard:theme', next) } catch { /* cosmetic — safe to swallow */ }
   }
-
-  // Set initial theme on mount
-  useState(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-  })
   const [activeRecipe, setActiveRecipe] = useState<Recipe | null>(null)
   const [activeRunState, setActiveRunState] = useState<RunState | null>(null)
   const [recipeParseErrors, setRecipeParseErrors] = useState<string[]>([])

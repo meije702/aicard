@@ -6,6 +6,10 @@ import type { Recipe, Kitchen } from '../types.ts'
 import type { ReadinessBlocker } from './recipe-runner.ts'
 import { defaultExecutors, type ExecutorRegistry } from './recipe-runner.ts'
 
+// Higher-level readiness check: delegates equipment checking to checkKitchenReadiness
+// in equipment.ts but also checks card-type availability (Layer 2) and executor-
+// specific equipment needs (Layer 3).
+//
 // Check whether the kitchen is ready to run a recipe.
 // Three layers of checking:
 //   1. Recipe-level: the ## Kitchen section lists equipment by name

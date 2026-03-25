@@ -23,7 +23,7 @@ export const localStorageKitchenRepository: KitchenRepository = {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return emptyKitchen()
     try {
-      return JSON.parse(raw) as Kitchen
+      return normaliseKitchenOnLoad(JSON.parse(raw) as Kitchen)
     } catch {
       return emptyKitchen()
     }
@@ -31,7 +31,11 @@ export const localStorageKitchenRepository: KitchenRepository = {
 
   save(kitchen: Kitchen): void {
     if (typeof localStorage === 'undefined') return
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(kitchen))
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(kitchen))
+    } catch (e) {
+      console.warn('Failed to save kitchen state:', e)
+    }
   },
 }
 
@@ -97,6 +101,16 @@ export function upsertCardDefinition(kitchen: Kitchen, card: CardDefinition): Ki
     : [...kitchen.pantry, card]
 
   return { ...kitchen, pantry: updated }
+}
+
+// Fill default values for optional fields on load so consumers don't need
+// scattered ?? guards. Keeps type fields optional for backward compat.
+function normaliseKitchenOnLoad(kitchen: Kitchen): Kitchen {
+  return {
+    ...kitchen,
+    houseStyle: kitchen.houseStyle ?? '',
+    journal: kitchen.journal ?? [],
+  }
 }
 
 function emptyKitchen(): Kitchen {

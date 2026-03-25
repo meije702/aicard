@@ -21,11 +21,11 @@ export function isEquipmentConnected(kitchen: Equipment[], name: string): boolea
   )
 }
 
-// Get a connected piece of equipment by name.
-export function getEquipment(kitchen: Equipment[], name: string): Equipment | undefined {
-  return kitchen.find(e => e.name.toLowerCase() === name.toLowerCase())
-}
-
+// Lower-level equipment readiness check: given a list of needed equipment names,
+// return which ones are missing or disconnected. Used by the higher-level
+// checkRecipeReadiness() in recipe-readiness.ts which also checks card-type
+// availability and executor-specific needs.
+//
 // Check which equipment a recipe needs and which is missing from the kitchen.
 export function checkKitchenReadiness(
   needed: string[],

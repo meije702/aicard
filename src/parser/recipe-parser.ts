@@ -7,10 +7,8 @@
 // Each helper returns a ParseResult<T> — { value, errors } — rather than
 // accepting a mutable errors array. parseRecipe merges all returned errors.
 
-import type { Recipe, RecipeStep, CardStep, SubRecipeStep, CardType, CardConfig, ParseResult, ParsedRecipe } from '../types.ts'
-
-// Card types recognised by the system. Anything else is a parse error.
-const KNOWN_CARD_TYPES: readonly CardType[] = ['listen', 'wait', 'send-message']
+import type { Recipe, RecipeStep, CardStep, SubRecipeStep, CardConfig, ParseResult, ParsedRecipe } from '../types.ts'
+import { KNOWN_CARD_TYPES, normaliseCardType } from './card-type.ts'
 
 export function parseRecipe(markdown: string): ParsedRecipe {
   const lines = markdown.split('\n')
@@ -129,35 +127,8 @@ function parseSteps(lines: string[]): ParseResult<RecipeStep[]> {
   return { value: steps, errors }
 }
 
-// Extract the lines belonging to a named section (e.g. "## Steps").
-// Returns the lines between this section heading and the next ## heading,
-// plus the 1-based line number of the first content line (for error messages).
-//
-// Comparison is case-insensitive so "## kitchen" and "## KITCHEN" both
-// match "## Kitchen".
-function extractSection(lines: string[], heading: string): { lines: string[], startLine: number } {
-  const result: string[] = []
-  let inSection = false
-  let startLine = 0
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    if (line.trim().toLowerCase() === heading.toLowerCase()) {
-      inSection = true
-      startLine = i + 2  // 1-based; the content starts on the next line
-      continue
-    }
-    // Stop at the next level-2 heading
-    if (inSection && /^##\s/.test(line) && line.trim().toLowerCase() !== heading.toLowerCase()) {
-      break
-    }
-    if (inSection) {
-      result.push(line)
-    }
-  }
-
-  return { lines: result, startLine }
-}
+// Re-export from section-helpers.ts (recipe-parser needs line-number tracking).
+import { extractSectionWithLineInfo as extractSection } from './section-helpers.ts'
 
 // Split section lines into blocks, each starting with a ### heading.
 // Lines that appear before the first ### heading (e.g. blank lines at the
@@ -260,13 +231,3 @@ function parseConfig(lines: string[]): CardConfig {
   return config
 }
 
-// Normalise a card type name to lowercase-hyphenated and validate it against
-// the known set. Returns null for unrecognised types so the caller can push a
-// parse error rather than silently casting an invalid string to CardType.
-// "Send Message" → "send-message", "Listen" → "listen", "Wait" → "wait"
-function normaliseCardType(raw: string): CardType | null {
-  const normalised = raw.toLowerCase().replace(/\s+/g, '-')
-  return (KNOWN_CARD_TYPES as readonly string[]).includes(normalised)
-    ? (normalised as CardType)
-    : null
-}

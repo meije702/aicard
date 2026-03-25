@@ -6,7 +6,6 @@
 
 import type {
     Recipe,
-    CardStep,
     CardConfig,
     RecipeContext,
     CardResult,
@@ -162,7 +161,7 @@ export async function runRecipe(
 
         // Sub-recipe steps: execute via onSubRecipe callback (Level 3) or skip (Level 1/2)
         if (!('card' in recipeStep)) {
-            const subStep = recipeStep as { number: number; name: string; recipe: string }
+            const subStep = recipeStep
             if (!onSubRecipe) {
                 // Backwards-compatible: no sub-recipe runner injected — skip silently
                 stepState.status = 'skipped'
@@ -189,7 +188,7 @@ export async function runRecipe(
             break
         }
 
-        const cardStep = recipeStep as CardStep
+        const cardStep = recipeStep
         const executor = executors[cardStep.card]
 
         if (!executor) {

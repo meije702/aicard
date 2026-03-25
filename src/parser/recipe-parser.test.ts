@@ -296,3 +296,51 @@ Deno.test("parseRecipe: includes a line number when a step has no card declarati
   const errorText = result.errors.join(' ')
   assertEquals(errorText.includes('Line'), true)
 })
+
+// --- Multi-error accumulation ---
+
+Deno.test("parseRecipe: only title and no Steps section produces at least one error", () => {
+  const result = expectFailure(`
+# Bare Recipe
+  `)
+  // Purpose is optional (returns no error), but missing Steps does produce an error
+  assertGreater(result.errors.length, 0)
+  assertEquals(result.errors.some(e => e.includes('Steps')), true)
+})
+
+Deno.test("parseRecipe: two unknown card types produce two separate errors", () => {
+  const result = expectFailure(`
+# Double Bad Cards
+> A recipe with two unknown card types.
+## Kitchen
+- None
+## Steps
+### 1. First bad step
+*Card: FizzBuzz*
+### 2. Second bad step
+*Card: BazQux*
+  `)
+  assertGreater(result.errors.length, 1)
+  const errorText = result.errors.join('\n')
+  assertEquals(errorText.includes('FizzBuzz') || errorText.includes('fizzbuzz'), true)
+  assertEquals(errorText.includes('BazQux') || errorText.includes('bazqux'), true)
+})
+
+Deno.test("parseRecipe: one valid step and one invalid step accumulates error for invalid only", () => {
+  const result = expectFailure(`
+# Mixed Steps
+> One good step, one bad.
+## Kitchen
+- None
+## Steps
+### 1. A valid wait
+*Card: Wait*
+- How long: 1 hour
+### 2. An invalid step
+*Card: MadeUpCard*
+  `)
+  assertGreater(result.errors.length, 0)
+  // The valid step should still be parsed
+  assertEquals(result.partialRecipe.steps?.length, 1)
+  assertEquals(result.errors.some(e => e.includes('MadeUpCard') || e.includes('madeupcard')), true)
+})

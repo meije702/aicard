@@ -17,17 +17,7 @@ interface Props {
   onHouseStyleChange: (houseStyle: string) => void
 }
 
-// Map equipment names to friendly icons
-function equipmentIcon(name: string): string {
-  const n = name.toLowerCase()
-  if (n.includes('shopify') || n.includes('shop')) return '🛍'
-  if (n.includes('gmail') || n.includes('email') || n.includes('mail')) return '✉️'
-  if (n.includes('discord')) return '💬'
-  if (n.includes('slack')) return '💬'
-  if (n.includes('calendar')) return '📅'
-  if (n.includes('spreadsheet') || n.includes('sheets')) return '📊'
-  return '🔌'
-}
+import { equipmentIcon } from './equipment-icon.ts'
 
 export default function Kitchen({ kitchen, onOpenRecipe, onOpenKitchenRecipe, onConnectEquipment, sousChefSetup, onSousChefSetupChange, onHouseStyleChange }: Props) {
   const connectedEquipment = kitchen.equipment.filter(e => e.connected)

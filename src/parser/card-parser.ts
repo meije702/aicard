@@ -3,12 +3,14 @@
 
 import type { CardDefinition, CardType, CardEquipmentRequirement, CardConfigField, Technique } from '../types.ts'
 import { extractSection, extractSubsections } from './section-helpers.ts'
+import { normaliseCardType } from './card-type.ts'
 
 export function parseCard(markdown: string): CardDefinition {
   const lines = markdown.split('\n')
 
   const name = parseName(lines)
-  const type = normaliseCardType(name)
+  // TODO: introduce ParseResult<CardDefinition> to surface unknown card types
+  const type = normaliseCardType(name) ?? name.toLowerCase().replace(/\s+/g, '-') as CardType
   const purpose = parsePurpose(lines)
   const equipment = parseEquipment(lines)
   const configFields = parseConfigFields(lines)
@@ -105,7 +107,3 @@ function parseTechnique(lines: string[]): Technique | undefined {
 }
 
 
-// Normalise a card type name to lowercase-hyphenated
-function normaliseCardType(name: string): CardType {
-  return name.toLowerCase().replace(/\s+/g, '-') as CardType
-}

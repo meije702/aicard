@@ -21,6 +21,29 @@ export function extractSection(lines: string[], heading: string): string[] {
   return result
 }
 
+// Like extractSection but also returns the 1-based line number where content starts.
+// Used by recipe-parser which needs line numbers for error messages.
+export function extractSectionWithLineInfo(lines: string[], heading: string): { lines: string[], startLine: number } {
+  const result: string[] = []
+  let inSection = false
+  let startLine = 0
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (line.trim().toLowerCase() === heading.toLowerCase()) {
+      inSection = true
+      startLine = i + 2  // 1-based; the content starts on the next line
+      continue
+    }
+    if (inSection && /^##\s/.test(line) && line.trim().toLowerCase() !== heading.toLowerCase()) {
+      break
+    }
+    if (inSection) result.push(line)
+  }
+
+  return { lines: result, startLine }
+}
+
 // Extract ### subsections from a set of lines into a name→content map.
 // Subsection names are normalised to lowercase.
 export function extractSubsections(lines: string[]): Record<string, string> {

@@ -50,7 +50,8 @@ export const waitExecutor: CardExecutor = {
 
 // Parse a plain-English duration string into milliseconds.
 // Handles: "3 days", "1 hour", "30 minutes", "5 seconds"
-function parseDurationToMs(duration: string): number {
+// Returns 0 on failure (used as an error signal by execute).
+export function parseDurationToMs(duration: string): number {
   const match = duration.trim().match(/^(\d+(?:\.\d+)?)\s*(second|seconds|minute|minutes|hour|hours|day|days)$/i)
   if (!match) return 0
 

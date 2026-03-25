@@ -15,8 +15,8 @@ export function loadSousChefSetup(): SousChefSetup {
       active: 'anthropic',
       providers: { anthropic: { apiKey: legacy.trim() } },
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(setup))
-    localStorage.removeItem(LEGACY_KEY)
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(setup)) } catch { /* best-effort migration */ }
+    try { localStorage.removeItem(LEGACY_KEY) } catch { /* best-effort cleanup */ }
     return setup
   }
 
@@ -38,7 +38,7 @@ export function loadSousChefSetup(): SousChefSetup {
         active: old.provider,
         providers: { [old.provider]: { apiKey: old.apiKey, ...(old.baseUrl ? { baseUrl: old.baseUrl } : {}) } },
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(setup))
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(setup)) } catch { /* best-effort migration */ }
       return setup
     }
   } catch {
@@ -49,7 +49,11 @@ export function loadSousChefSetup(): SousChefSetup {
 }
 
 export function saveSousChefSetup(setup: SousChefSetup): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(setup))
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(setup))
+  } catch (e) {
+    console.warn('Failed to save sous chef setup:', e)
+  }
 }
 
 export function deriveActiveConfig(setup: SousChefSetup): SousChefConfig | null {
