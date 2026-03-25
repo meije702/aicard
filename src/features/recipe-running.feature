@@ -83,3 +83,28 @@ Feature: Recipe running
     When I run the recipe
     Then the step should have status "failed"
     And the step result should include "Couldn't understand"
+
+  Scenario: User tweaks a step during the review window
+    Given a Wait step configured for "999 days"
+    And a kitchen with no equipment
+    When I run the recipe and during review change "how long" to "1 second"
+    Then the recipe should complete successfully
+    And the step should complete in under 5 seconds
+    And the step description should include "1 second"
+
+  Scenario: User correction is logged once alongside execution
+    Given a Listen step listening for "status change" from "Shopify"
+    And a kitchen with connected "Shopify"
+    When I run the recipe and enter "event data" as "order shipped" with journal tracking
+    Then the recipe should complete successfully
+    And the kitchen journal should contain 1 "corrected" entry for "listen"
+    And the kitchen journal should contain 1 "executed" entry for "listen"
+    And the latest correction should record "" changed to "order shipped"
+
+  Scenario: User stops a running recipe before the next step begins
+    Given a recipe with Wait steps of "1 second" and "999 days"
+    And a kitchen with no equipment
+    When I stop the recipe after step 1 completes
+    Then the recipe should be cancelled
+    And step 1 should have status "complete"
+    And step 2 should have status "pending"
