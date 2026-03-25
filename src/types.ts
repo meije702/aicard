@@ -129,6 +129,12 @@ export interface CardDefinition {
   technique?: Technique
 }
 
+// Discriminated union for card parsing — mirrors ParsedRecipe pattern.
+// Callers must check success before accessing the card definition.
+export type ParsedCard =
+  | { success: true;  card: CardDefinition }
+  | { success: false; errors: string[]; partialCard: Partial<CardDefinition> }
+
 export interface CardEquipmentRequirement {
   description: string
   required: boolean
@@ -193,8 +199,12 @@ export interface EquipmentDefinition {
   steps: EquipmentStep[]
   configFields: EquipmentConfigField[]
   technique?: Technique
-  errors: string[]         // parser errors — never throw, always accumulate
 }
+
+// Discriminated union for equipment parsing — mirrors ParsedRecipe/ParsedCard pattern.
+export type ParsedEquipment =
+  | { success: true;  equipment: EquipmentDefinition }
+  | { success: false; errors: string[]; partialEquipment: Partial<EquipmentDefinition> }
 
 // --- Wizard types (sous chef-guided equipment setup) ---
 

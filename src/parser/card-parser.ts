@@ -1,22 +1,38 @@
 // Parse a .card.md file into a CardDefinition object.
 // See docs/AICard_Card_Format.md for the format specification.
 
-import type { CardDefinition, CardType, CardEquipmentRequirement, CardConfigField, Technique } from '../types.ts'
+import type { CardEquipmentRequirement, CardConfigField, Technique, ParsedCard } from '../types.ts'
 import { extractSection, extractSubsections } from './section-helpers.ts'
-import { normaliseCardType } from './card-type.ts'
+import { KNOWN_CARD_TYPES, normaliseCardType } from './card-type.ts'
 
-export function parseCard(markdown: string): CardDefinition {
+export function parseCard(markdown: string): ParsedCard {
   const lines = markdown.split('\n')
+  const errors: string[] = []
 
   const name = parseName(lines)
-  // TODO: introduce ParseResult<CardDefinition> to surface unknown card types
-  const type = normaliseCardType(name) ?? name.toLowerCase().replace(/\s+/g, '-') as CardType
+  if (!name) errors.push('Card definition is missing a title (# heading).')
+
+  const type = normaliseCardType(name)
+  if (name && type === null) {
+    errors.push(
+      `Unknown card type "${name}". Known types: ${KNOWN_CARD_TYPES.join(', ')}.`,
+    )
+  }
+
   const purpose = parsePurpose(lines)
   const equipment = parseEquipment(lines)
   const configFields = parseConfigFields(lines)
   const technique = parseTechnique(lines)
 
-  return { name, type, purpose, equipment, configFields, technique }
+  if (errors.length > 0) {
+    return {
+      success: false,
+      errors,
+      partialCard: { name, purpose, equipment, configFields, technique },
+    }
+  }
+
+  return { success: true, card: { name, type: type!, purpose, equipment, configFields, technique } }
 }
 
 // Parse the card name from the first # heading

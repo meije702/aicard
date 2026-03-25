@@ -51,3 +51,8 @@ Feature: Card definition parsing
     Given a card file "pantry/wait.card.md"
     When I parse the card definition
     Then the card should not have a technique
+
+  Scenario: Unknown card type produces a parse error
+    Given a card definition with an unknown type
+    When I parse the card definition
+    Then parsing should fail

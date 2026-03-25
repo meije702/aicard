@@ -18,6 +18,12 @@ export class World {
   // Parsed objects
   recipe: Recipe | null = null
   cardDefinition: CardDefinition | null = null
+  // Parse errors are populated by When steps but not asserted by current BDD
+  // scenarios — parser error details are covered by unit tests. These fields
+  // exist so future user-visible failure scenarios (e.g. "invalid card shows
+  // error dialog") have infrastructure ready without changing the When steps.
+  cardParseErrors: string[] = []
+  equipmentParseErrors: string[] = []
   equipmentDefinition: EquipmentDefinition | null = null
 
   // Kitchen state

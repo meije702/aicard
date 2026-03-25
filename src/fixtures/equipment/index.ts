@@ -6,10 +6,17 @@ import { parseEquipmentDefinition } from '../../parser/equipment-parser.ts'
 import shopifyMd from './shopify.equipment.md?raw'
 import gmailMd from './gmail.equipment.md?raw'
 
-// Parse all fixtures once at import time
+// Bundled fixtures are product assets — if they fail to parse, that's a
+// build-time bug, not a runtime condition to handle gracefully.
+function unwrapOrThrow(markdown: string, label: string): EquipmentDefinition {
+  const parsed = parseEquipmentDefinition(markdown)
+  if (parsed.success) return parsed.equipment
+  throw new Error(`Bundled ${label} equipment fixture failed to parse: ${parsed.errors.join('; ')}`)
+}
+
 const definitions: EquipmentDefinition[] = [
-  parseEquipmentDefinition(shopifyMd),
-  parseEquipmentDefinition(gmailMd),
+  unwrapOrThrow(shopifyMd, 'Shopify'),
+  unwrapOrThrow(gmailMd, 'Gmail'),
 ]
 
 // Case-insensitive lookup by equipment name (same pattern as EquipmentConnect.getEquipmentProfile)

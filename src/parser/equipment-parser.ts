@@ -1,10 +1,10 @@
 // Parse an .equipment.md file into an EquipmentDefinition object.
 // Follows the same conventions as card-parser.ts: never throw, accumulate errors.
 
-import type { EquipmentDefinition, DocumentationLink, EquipmentStep, EquipmentConfigField, Technique } from '../types.ts'
+import type { DocumentationLink, EquipmentStep, EquipmentConfigField, Technique, ParsedEquipment } from '../types.ts'
 import { extractSection, extractSubsections } from './section-helpers.ts'
 
-export function parseEquipmentDefinition(markdown: string): EquipmentDefinition {
+export function parseEquipmentDefinition(markdown: string): ParsedEquipment {
   const lines = markdown.split('\n')
   const errors: string[] = []
 
@@ -18,7 +18,15 @@ export function parseEquipmentDefinition(markdown: string): EquipmentDefinition 
   const configFields = parseConfigFields(lines)
   const technique = parseTechnique(lines)
 
-  return { name, purpose, mode, documentation, steps, configFields, technique, errors }
+  if (errors.length > 0) {
+    return {
+      success: false,
+      errors,
+      partialEquipment: { name, purpose, mode, documentation, steps, configFields, technique },
+    }
+  }
+
+  return { success: true, equipment: { name, purpose, mode, documentation, steps, configFields, technique } }
 }
 
 // Parse the equipment name from the first # heading

@@ -8,75 +8,91 @@ import { assertEquals, assertExists, assertGreater } from 'jsr:@std/assert'
 import type { World } from '../test/bdd/world.ts'
 
 Given('a card file {string}', async (world: World, filename: string) => {
-  world.rawText = await loadFixture(filename)
+    world.rawText = await loadFixture(filename)
+})
+
+Given('a card definition with an unknown type', (world: World) => {
+    world.rawText = '# Make Coffee\n\n> Brews a cup of coffee.\n\n## Equipment\n- None\n\n## Config\n\n### Beans\nThe type of coffee beans.'
 })
 
 When('I parse the card definition', (world: World) => {
-  assertExists(world.rawText, 'No card text to parse')
-  world.cardDefinition = parseCard(world.rawText)
+    assertExists(world.rawText, 'No card text to parse')
+    const parsed = parseCard(world.rawText)
+    if (parsed.success) {
+        world.cardDefinition = parsed.card
+        world.cardParseErrors = []
+    } else {
+        world.cardDefinition = null
+        world.cardParseErrors = parsed.errors
+    }
 })
 
 Then('the card name should be {string}', (world: World, name: string) => {
-  assertExists(world.cardDefinition)
-  assertEquals(world.cardDefinition.name, name)
+    assertExists(world.cardDefinition)
+    assertEquals(world.cardDefinition.name, name)
 })
 
 Then('the card type should be {string}', (world: World, type: string) => {
-  assertExists(world.cardDefinition)
-  assertEquals(world.cardDefinition.type, type)
+    assertExists(world.cardDefinition)
+    assertEquals(world.cardDefinition.type, type)
 })
 
 Then('the card should have a purpose', (world: World) => {
-  assertExists(world.cardDefinition)
-  assertGreater(world.cardDefinition.purpose.length, 0)
+    assertExists(world.cardDefinition)
+    assertGreater(world.cardDefinition.purpose.length, 0)
 })
 
 Then('the card should have {int} equipment requirements', (world: World, count: string) => {
-  assertExists(world.cardDefinition)
-  assertEquals(world.cardDefinition.equipment.length, parseInt(count))
+    assertExists(world.cardDefinition)
+    assertEquals(world.cardDefinition.equipment.length, parseInt(count))
 })
 
 Then('the card should have a config field {string}', (world: World, fieldName: string) => {
-  assertExists(world.cardDefinition)
-  const found = world.cardDefinition.configFields.some(f => f.name === fieldName)
-  assertEquals(found, true, `Expected config field "${fieldName}"`)
+    assertExists(world.cardDefinition)
+    const found = world.cardDefinition.configFields.some(f => f.name === fieldName)
+    assertEquals(found, true, `Expected config field "${fieldName}"`)
 })
 
 Then('the card should have a technique', (world: World) => {
-  assertExists(world.cardDefinition)
-  assertExists(world.cardDefinition.technique, 'Expected card to have a technique')
+    assertExists(world.cardDefinition)
+    assertExists(world.cardDefinition.technique, 'Expected card to have a technique')
 })
 
 Then('the card should not have a technique', (world: World) => {
-  assertExists(world.cardDefinition)
-  assertEquals(world.cardDefinition.technique, undefined, 'Expected card to have no technique')
+    assertExists(world.cardDefinition)
+    assertEquals(world.cardDefinition.technique, undefined, 'Expected card to have no technique')
 })
 
 Then('the technique voice should contain {string}', (world: World, text: string) => {
-  assertExists(world.cardDefinition?.technique, 'No technique found')
-  assertEquals(
-    world.cardDefinition.technique.voice.toLowerCase().includes(text.toLowerCase()),
-    true,
-    `Expected technique voice to contain "${text}"`,
-  )
+    assertExists(world.cardDefinition?.technique, 'No technique found')
+    assertEquals(
+        world.cardDefinition.technique.voice.toLowerCase().includes(text.toLowerCase()),
+        true,
+        `Expected technique voice to contain "${text}"`,
+    )
 })
 
 Then('the technique constraints should contain {string}', (world: World, text: string) => {
-  assertExists(world.cardDefinition?.technique, 'No technique found')
-  assertEquals(
-    world.cardDefinition.technique.constraints.toLowerCase().includes(text.toLowerCase()),
-    true,
-    `Expected technique constraints to contain "${text}"`,
-  )
+    assertExists(world.cardDefinition?.technique, 'No technique found')
+    assertEquals(
+        world.cardDefinition.technique.constraints.toLowerCase().includes(text.toLowerCase()),
+        true,
+        `Expected technique constraints to contain "${text}"`,
+    )
 })
 
 Then('the technique expertise should contain {string}', (world: World, text: string) => {
-  assertExists(world.cardDefinition?.technique, 'No technique found')
-  assertEquals(
-    world.cardDefinition.technique.expertise.toLowerCase().includes(text.toLowerCase()),
-    true,
-    `Expected technique expertise to contain "${text}"`,
-  )
+    assertExists(world.cardDefinition?.technique, 'No technique found')
+    assertEquals(
+        world.cardDefinition.technique.expertise.toLowerCase().includes(text.toLowerCase()),
+        true,
+        `Expected technique expertise to contain "${text}"`,
+    )
+})
+
+Then('parsing should fail', (world: World) => {
+    assertEquals(world.cardDefinition, null, 'Expected parsing to fail')
+    assertGreater(world.cardParseErrors.length, 0, 'Expected at least one parse error')
 })
 
 // Run the feature file

@@ -23,7 +23,6 @@ function makeShopifyDef(): EquipmentDefinition {
       constraints: 'One step at a time.',
       expertise: 'Shopify admin expert.',
     },
-    errors: [],
   }
 }
 
