@@ -13,7 +13,7 @@ export default function EquipmentPanel({ equipmentNames, kitchen, onConnectEquip
   if (equipmentNames.length === 0) return null
 
   return (
-    <div className={styles.equipmentCard}>
+    <div className={styles.equipmentCard} data-tour="equipment">
       <div className={styles.sectionLabel}>Equipment</div>
       {equipmentNames.map(name => {
         const equip = kitchen.equipment.find(

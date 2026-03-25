@@ -69,6 +69,7 @@ export default function StepItem({
       className={styles.stepItem}
       style={{ animationDelay: `${index * 60}ms` }}
       aria-label={`Step ${step.number}: ${step.name}, ${status}`}
+      data-tour={`step-${index}`}
     >
       <div
         className={stepCardClass(status)}

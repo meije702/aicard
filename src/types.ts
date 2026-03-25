@@ -228,3 +228,21 @@ export interface WizardStepResponse {
   fields: WizardFieldSpec[]
   canAdvance: boolean
 }
+
+// A single option in the sous chef hat menu.
+// Most options are plain questions (action undefined).
+// Special actions like 'tour' are injected deterministically by the client,
+// not inferred from LLM-generated text.
+export type HatOptionAction = 'tour' | 'ask-anything'
+
+export interface HatOption {
+  label: string
+  action?: HatOptionAction
+}
+
+// A single stop in the recipe tour walkthrough
+export interface TourStop {
+  title: string            // e.g. "Step 1: Listen for new orders"
+  body: string             // markdown rendered by MarkdownText
+  targetSelector: string   // data-tour attribute value to highlight
+}

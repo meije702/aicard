@@ -71,7 +71,7 @@ Wrong vocabulary is the single fastest signal that a contribution was generated 
 
 ## Roadmap — what comes after v1
 
-### v4 — Techniques and house style
+### v4 — Techniques and house style ✓ Implemented
 
 Cards are agent skills. Techniques teach the sous chef how to use each skill well. See `docs/AICard_Techniques.md` for the full design.
 
@@ -80,6 +80,8 @@ Cards are agent skills. Techniques teach the sous chef how to use each skill wel
 - A **kitchen journal** records what happened and what the user changed. Recent corrections become few-shot examples in prompts
 
 This is structured prompting, not model training. It works with any provider Maria has connected.
+
+Key implementation files: `src/sous-chef/prompt-context.ts` (prompt assembly), `src/kitchen/journal.ts` (kitchen journal with pruning), `src/ui/Kitchen.tsx` (house style editor).
 
 ### v5 — Pattern detection (not yet designed)
 

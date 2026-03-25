@@ -15,21 +15,22 @@ If you have not read these, your contribution will likely not match the project'
 
 ## The scope fence
 
-**v1 builds Level 1 (Following) and Level 2 (Tweaking) only.**
+**v1 builds Level 1 (Following), Level 2 (Tweaking), and Level 3 (Combining).**
 
 - Level 1: a user opens a recipe, the sous chef checks their kitchen, and the recipe runs.
 - Level 2: a user opens a card in a running recipe and changes a setting.
+- Level 3: a recipe step can call another recipe via `*Recipe: Name*`. Max nesting depth is 3.
 
 ### What not to build yet
 
 - User accounts or authentication
 - Recipe sharing mechanics
-- The full pantry (8 card types) — v1 has 3: Listen, Wait, Send Message
-- Level 3, 4, or 5 features
+- The full pantry — v1 has 3 card types: Listen, Wait, Send Message
+- Level 4 or 5 features
 - A mobile-specific UI
 - Any backend server
 
-When tempted to build these, ask: **"Does Level 1 work yet?"** If no, build that first. Out-of-scope PRs will be closed.
+Out-of-scope PRs will be closed.
 
 ## How to contribute
 

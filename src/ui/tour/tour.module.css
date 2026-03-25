@@ -1,0 +1,171 @@
+/* Recipe Tour — spotlight walkthrough anchored to real UI elements.
+   Reuses the project's design tokens for consistency. */
+
+/* === Spotlight overlay === */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+/* The spotlight hole — positioned over the target element.
+   Uses a massive box-shadow to dim everything else. */
+.spotlight {
+  position: fixed;
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 9999px rgba(44, 36, 22, 0.55);
+  transition: all var(--duration-normal) var(--ease-out);
+  pointer-events: none;
+  z-index: 60;
+}
+
+/* === Popover === */
+.popover {
+  position: fixed;
+  width: 340px;
+  max-width: calc(100vw - 24px);
+  background: var(--surface-lightest);
+  border: 1px solid var(--surface-mid);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  padding: var(--space-5);
+  z-index: 61;
+  pointer-events: auto;
+  animation: popoverIn var(--duration-normal) var(--ease-out);
+}
+
+@keyframes popoverIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Arrow pointing at the target */
+.arrow {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+}
+
+.arrowUp {
+  top: -8px;
+  border-bottom: 8px solid var(--surface-lightest);
+}
+
+.arrowDown {
+  bottom: -8px;
+  border-top: 8px solid var(--surface-lightest);
+}
+
+/* === Content === */
+.title {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  letter-spacing: var(--tracking-tight);
+  margin-bottom: var(--space-2);
+}
+
+.body {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+/* Markdown inside the popover body */
+.body h3, .body h4 { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--text-primary); margin: var(--space-2) 0 var(--space-1); }
+.body p { margin: 0 0 var(--space-2); }
+.body ul, .body ol { padding-left: var(--space-5); margin: 0 0 var(--space-2); }
+.body li { margin-bottom: var(--space-1); }
+.body strong { font-weight: var(--weight-semibold); color: var(--text-primary); }
+
+/* === Navigation === */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-top: 1px solid var(--surface-mid);
+  padding-top: var(--space-4);
+}
+
+.navButton {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-family: var(--font-body);
+  border: 1px solid var(--surface-mid);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.navButton:hover {
+  background: var(--surface-light);
+  border-color: var(--surface-dark);
+}
+
+.nextButton {
+  composes: navButton;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--text-inverse);
+}
+
+.nextButton:hover {
+  background: var(--accent-primary-hover);
+  border-color: var(--accent-primary-hover);
+}
+
+.closeButton {
+  composes: navButton;
+  margin-left: auto;
+}
+
+/* === Progress dots === */
+.progress {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--surface-mid);
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.dotActive {
+  background: var(--accent-primary);
+}
+
+.dotComplete {
+  background: var(--accent-secondary);
+}
+
+/* === Loading === */
+.loading {
+  padding: var(--space-4) 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* === Mobile adjustments === */
+@media (max-width: 767px) {
+  .popover {
+    width: calc(100vw - 24px);
+    left: 12px !important;
+  }
+}

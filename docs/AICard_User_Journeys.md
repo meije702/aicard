@@ -38,6 +38,25 @@ These are the step-by-step experiences we are building toward. Each journey is d
 
 ---
 
+## Level 3 — Combining recipes
+
+**Maria's second month**
+
+1. Maria has two recipes: "Thank You Follow-Up" (listens for orders, waits, sends a thank-you) and "Community Message" (composes and sends a message to her local business group).
+2. She wants a single recipe that handles the order *and* notifies her community about popular items. Instead of running two recipes separately, she asks Jun to help.
+3. Jun opens the thank-you recipe and adds a fourth step: `*Recipe: Community Message*`. This tells the recipe to run the community message recipe as a sub-step, passing along the order context.
+4. Maria runs the combined recipe. Steps 1–3 work as before. When step 4 fires, the community message recipe runs inside it — the sous chef composes the community post using the order details from step 1.
+5. Maria reviews and sends both messages. The recipe completes.
+6. She never had to learn about "sub-workflows" or "nested automations." Jun just told her: "Step 4 calls your other recipe."
+
+### What success looks like at Level 3
+
+- Maria can run one recipe that calls another, without understanding the mechanics.
+- Jun can wire recipes together by adding a single step referencing another recipe by name.
+- Nesting is limited to 3 levels deep — enough for real use, not enough to create confusion.
+
+---
+
 ## v4 — Personalised messages
 
 **Maria's third month**

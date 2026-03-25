@@ -5,11 +5,12 @@
 // The panel uses glass morphism with spring animations.
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import type { Recipe, Kitchen as KitchenType, SousChefConfig } from '../types.ts'
+import type { Recipe, Kitchen as KitchenType, SousChefConfig, HatOption } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import { createSousChef } from '../sous-chef/sous-chef.ts'
 import { getProvider } from '../sous-chef/providers.ts'
 import { checkRecipeReadiness } from '../runner/recipe-readiness.ts'
+import MarkdownText from './MarkdownText.tsx'
 import styles from './SousChef.module.css'
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
   recipe: Recipe | null
   kitchen: KitchenType
   runState?: RunState | null
+  onStartTour?: () => void
 }
 
 type HatState = 'closed' | 'options' | 'asking'
@@ -85,9 +87,9 @@ function LoadingDots() {
   )
 }
 
-export default function SousChef({ sousChefConfig, recipe, kitchen, runState: externalRunState }: Props) {
+export default function SousChef({ sousChefConfig, recipe, kitchen, runState: externalRunState, onStartTour }: Props) {
   const [hatState, setHatState] = useState<HatState>('closed')
-  const [options, setOptions] = useState<string[]>([])
+  const [options, setOptions] = useState<HatOption[]>([])
   const [loadingOptions, setLoadingOptions] = useState(false)
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
@@ -153,7 +155,7 @@ export default function SousChef({ sousChefConfig, recipe, kitchen, runState: ex
     }
 
     if (!sousChefConfig) {
-      setOptions(['Connect a sous chef in Your Kitchen to get help here'])
+      setOptions([{ label: 'Connect a sous chef in Your Kitchen to get help here' }])
       setHatState('options')
       return
     }
@@ -176,26 +178,36 @@ export default function SousChef({ sousChefConfig, recipe, kitchen, runState: ex
         addToast(message, 'error')
         setHatState('closed')
       } else {
-        setOptions([
-          'Check if my kitchen is ready',
-          'What does this recipe do?',
-          'I want to ask something else',
-        ])
+        const fallbackOptions: HatOption[] = [
+          { label: 'Check if my kitchen is ready' },
+        ]
+        if (recipe) {
+          fallbackOptions.push({ label: 'Walk me through this recipe', action: 'tour' })
+        }
+        fallbackOptions.push({ label: 'I want to ask something else', action: 'ask-anything' })
+        setOptions(fallbackOptions)
       }
     } finally {
       setLoadingOptions(false)
     }
   }
 
-  async function handleSelectOption(option: string) {
-    if (option.toLowerCase().includes('ask something else') ||
-        option.toLowerCase().includes('ask anything')) {
+  async function handleSelectOption(option: HatOption) {
+    // Dispatch on structured action — deterministic, not LLM-dependent
+    if (option.action === 'ask-anything') {
       setHatState('asking')
       return
     }
+    if (option.action === 'tour' && recipe && onStartTour) {
+      setHatState('closed')
+      setAnswer('')
+      setQuestion('')
+      onStartTour()
+      return
+    }
     setHatState('asking')
-    setQuestion(option)
-    await handleAsk(option)
+    setQuestion(option.label)
+    await handleAsk(option.label)
   }
 
   const handleAsk = useCallback(async (q: string = question) => {
@@ -317,7 +329,7 @@ export default function SousChef({ sousChefConfig, recipe, kitchen, runState: ex
                     onClick={() => handleSelectOption(opt)}
                     role="menuitem"
                   >
-                    {opt}
+                    {opt.label}
                   </button>
                 ))
               )}
@@ -361,7 +373,7 @@ export default function SousChef({ sousChefConfig, recipe, kitchen, runState: ex
                   {question && (
                     <p className={styles.answerQuestion}>{question}</p>
                   )}
-                  <p className={styles.answerText}>{answer}</p>
+                  <MarkdownText text={answer} className={styles.markdown} />
                   <button
                     className={styles.backLink}
                     onClick={() => { setAnswer(''); setQuestion(''); setHatState('options') }}

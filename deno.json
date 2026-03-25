@@ -3,7 +3,7 @@
   "tasks": {
     "dev": "deno run -A npm:vite@^5.4.0",
     "build:frontend": "deno run -A npm:vite@^5.4.0 build",
-    "compile": "deno compile --allow-net --allow-read --include dist src/server.ts -o aicard",
+    "compile": "deno compile --allow-net --allow-read --allow-run -o aicard --include dist src/server.ts",
     "build": "deno task build:frontend && deno task compile",
     "test": "deno test --allow-read src/",
     "check": "deno check src/"

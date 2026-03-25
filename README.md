@@ -8,7 +8,9 @@ AICard is an open-source platform that lets ordinary people build automations us
 
 ## Status
 
-AICard is pre-v1. We are building **Level 1** (Following a recipe) and **Level 2** (Tweaking a setting). These must be solid before anything else. See [What Not to Build Yet](#what-not-to-build-yet).
+AICard v1 is feature-complete. **Level 1** (Following), **Level 2** (Tweaking), and **Level 3** (Combining) are implemented and tested. The v4 features — techniques, house style, and kitchen journal — are also in place.
+
+The pantry ships three card types (Listen, Wait, Send Message) and the sous chef supports five providers (Anthropic, OpenAI, Gemini, Mistral, Ollama). See [What Not to Build Yet](#what-not-to-build-yet) for what remains out of scope.
 
 ## Quick start
 
@@ -69,12 +71,10 @@ aicard/
 
 - User accounts or authentication
 - Recipe sharing mechanics
-- The full pantry (8 card types) — v1 has 3: Listen, Wait, Send Message
-- Level 3, 4, or 5 features
+- The full pantry — v1 has 3 card types: Listen, Wait, Send Message
+- Level 4 or 5 features
 - A mobile-specific UI
 - Any backend server
-
-When tempted, ask: **"Does Level 1 work yet?"**
 
 ## Contributing
 

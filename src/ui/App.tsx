@@ -12,6 +12,7 @@ import Kitchen from './Kitchen.tsx'
 import RecipeView from './RecipeView.tsx'
 import SousChef from './SousChef.tsx'
 import EquipmentWizard from './wizard/EquipmentWizard.tsx'
+import RecipeTour from './tour/RecipeTour.tsx'
 import styles from './App.module.css'
 
 type Screen = 'kitchen' | 'recipe'
@@ -56,6 +57,9 @@ export default function App() {
   const [recipeParseErrors, setRecipeParseErrors] = useState<string[]>([])
   // Equipment connection dialog state
   const [connectingEquipment, setConnectingEquipment] = useState<string | null>(null)
+
+  // Recipe tour state
+  const [tourActive, setTourActive] = useState(false)
 
   // Sous chef multi-provider setup — persisted to localStorage
   const [sousChefSetup, setSousChefSetup] = useState<SousChefSetup>(loadSousChefSetup)
@@ -184,7 +188,18 @@ export default function App() {
         recipe={activeRecipe}
         kitchen={kitchen}
         runState={activeRunState}
+        onStartTour={() => setTourActive(true)}
       />
+
+      {/* Recipe tour — in-page spotlight walkthrough */}
+      {tourActive && activeRecipe && (
+        <RecipeTour
+          recipe={activeRecipe}
+          kitchen={kitchen}
+          sousChefConfig={activeSousChefConfig}
+          onClose={() => setTourActive(false)}
+        />
+      )}
 
       {/* Recipe parse error dialog — shown when the uploaded file has parse errors */}
       {recipeParseErrors.length > 0 && (

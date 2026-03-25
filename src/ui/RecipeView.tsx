@@ -97,7 +97,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
         Back to kitchen
       </button>
 
-      <header className={styles.header}>
+      <header className={styles.header} data-tour="recipe-header">
         <h1 className={styles.recipeName}>{activeRecipe.name || 'Untitled Recipe'}</h1>
         {activeRecipe.purpose && (
           <p className={styles.recipePurpose}>{activeRecipe.purpose}</p>
@@ -187,7 +187,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
         </ol>
       </div>
 
-      <div className={styles.runArea} aria-live="polite">
+      <div className={styles.runArea} aria-live="polite" data-tour="run-area">
         {execution.isRunning ? (
           <button className={styles.stopButton} onClick={handleStop} aria-label="Stop recipe">
             Stop

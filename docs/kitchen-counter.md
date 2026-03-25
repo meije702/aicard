@@ -68,11 +68,9 @@ This is intentionally simple. It handles the thank-you recipe. It will not handl
 
 ---
 
-### The technique injection problem
+### ~~The technique injection problem~~ ✓ Resolved
 
-When the sous chef executes a card, the prompt will include: system prompt + technique + house style + journal entries + step context. How do we stay within token limits as all of these grow?
-
-**Not yet decided.** Needs a token budget per section. What gets truncated first? Probably journal entries (oldest first), then technique (summarise), then house style (never — it is short).
+Prompt assembly is implemented in `src/sous-chef/prompt-context.ts`. The order is: system prompt → technique → house style → recent corrections → step context. Journal entries are pruned to the 3 most recent corrections per card type. Token budgeting per section is not yet implemented — currently manageable because house style is short and corrections are capped.
 
 ---
 
@@ -84,19 +82,15 @@ The kitchen journal is append-only and stored in localStorage (~5MB limit). It g
 
 ---
 
-### The house style editing problem
+### ~~The house style editing problem~~ ✓ Resolved
 
-How does Maria set her house style? A free-text field? A structured form? The sous chef interviews her and generates it?
-
-**Not yet decided.** This is a UX problem. The simplest v4 approach is a free-text field in the kitchen settings. A sous-chef-guided interview would be better but adds complexity.
+Implemented as a free-text field in the kitchen settings (`src/ui/Kitchen.tsx`). Maria types her preferences, saves, and the house style is injected into every card prompt via `buildPromptContext()`. The sous-chef-guided interview remains a future enhancement.
 
 ---
 
-### The correction detection problem
+### ~~The correction detection problem~~ ✓ Resolved
 
-When Maria edits a composed message before sending, how does the system know what she changed? The Send Message card shows the composed message for review — if Maria changes it, we can diff the original against her edit. But if she edits in her email app (after clicking the mailto: link), we have no visibility.
-
-**v4 decision**: only capture corrections made within AICard's review panel. Edits made outside AICard are invisible. This is honest and avoids invasive tracking.
+Only corrections made within AICard's review panel are captured — edits in external apps are invisible. Implemented in `src/kitchen/journal.ts` as an append-only journal with pruning (100 entries per card type, 30 days max). Recent corrections are injected as few-shot examples via `buildPromptContext()`.
 
 ---
 

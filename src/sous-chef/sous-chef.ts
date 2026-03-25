@@ -5,7 +5,7 @@
 //
 // The sous chef speaks recipe language. Never technical language.
 
-import type { Recipe, Kitchen, SousChefConfig, EquipmentDefinition, WizardStepResponse } from '../types.ts'
+import type { Recipe, Kitchen, SousChefConfig, EquipmentDefinition, WizardStepResponse, TourStop, HatOption } from '../types.ts'
 import { checkRecipeReadiness, recipeHasWaitSteps } from '../runner/recipe-readiness.ts'
 import {
   SOUS_CHEF_SYSTEM_PROMPT,
@@ -17,13 +17,15 @@ import {
   buildFallbackStepResponse,
   EQUIPMENT_SETUP_SYSTEM_SUFFIX,
 } from './equipment-prompts.ts'
+import { buildTourStopPrompt, buildTourStopList } from './tour-prompts.ts'
 import { parseWizardStepResponse } from '../parser/wizard-response-parser.ts'
 import { sousChefAsk } from './client.ts'
 
 // Parse the model's response into a clean list of option strings.
 // Models (including Claude) often wrap JSON in ```json ... ``` fences despite
 // being told not to — this handles that gracefully with three fallback tiers.
-function extractOptions(raw: string): string[] {
+// Exported for testing. Parses the model's raw JSON response into option labels.
+export function extractOptions(raw: string): string[] {
   const cleaned = raw
     .replace(/^```(?:json)?\s*/m, '')
     .replace(/\s*```\s*$/m, '')
@@ -47,6 +49,20 @@ function extractOptions(raw: string): string[] {
     .map(l => l.replace(/^[-•*\d.\s]+/, '').trim())
     .filter(l => l.length > 0 && !l.startsWith('{') && !l.startsWith('`'))
     .slice(0, 5)
+}
+
+// Build the final hat options list from LLM-generated labels.
+// Injects deterministic actions (tour, ask-anything) that don't depend on LLM phrasing.
+// Exported for testing.
+export function buildHatOptions(llmLabels: string[], hasRecipe: boolean): HatOption[] {
+  const options: HatOption[] = llmLabels.map(label => ({ label }))
+
+  if (hasRecipe) {
+    options.push({ label: 'Walk me through this recipe', action: 'tour' })
+  }
+  options.push({ label: 'I want to ask something else', action: 'ask-anything' })
+
+  return options
 }
 
 // The sous chef needs a provider config to run.
@@ -99,10 +115,9 @@ export function createSousChef(config: SousChefConfig) {
     },
 
     // Generate contextual options for the chef's hat menu.
-    // Returns 3–5 plain-English options the user can tap.
-    // Uses structured JSON output so the response is always a typed array —
-    // no fragile regex parsing of bulleted lists.
-    async getHatOptions(recipe: Recipe | null, currentStepName: string | null, kitchen?: Kitchen): Promise<string[]> {
+    // Returns structured HatOption objects. Special actions (tour, ask-anything)
+    // are injected deterministically by the client — never inferred from LLM text.
+    async getHatOptions(recipe: Recipe | null, currentStepName: string | null, kitchen?: Kitchen): Promise<HatOption[]> {
       const parts: string[] = []
 
       if (recipe) {
@@ -129,7 +144,9 @@ export function createSousChef(config: SousChefConfig) {
 
       const context = parts.join(' ')
 
-      const prompt = `Generate 3 to 5 short, friendly options for a helper menu. Each option should be something the user might want to know or do right now. Write them as short action phrases (e.g. "Check if my kitchen is ready"). Always include "I want to ask something else" as the last option.
+      // Ask the LLM for contextual options — but NOT the tour or ask-anything,
+      // which are injected below as structured actions.
+      const prompt = `Generate 2 to 4 short, friendly options for a helper menu. Each option should be something the user might want to know or do right now. Write them as short action phrases (e.g. "Check if my kitchen is ready"). Do NOT include options about explaining the recipe or asking something else — those are handled separately.
 
 ${context}
 
@@ -137,7 +154,9 @@ Respond with ONLY a JSON object in this exact format, no other text:
 {"options": ["option one", "option two", "option three"]}`
 
       const response = await ask(config, prompt)
-      return extractOptions(response)
+      const labels = extractOptions(response)
+
+      return buildHatOptions(labels, recipe !== null)
     },
 
     // Guide the user through one step of equipment setup.
@@ -164,6 +183,40 @@ Respond with ONLY a JSON object in this exact format, no other text:
         // Model unreachable — use the .equipment.md content directly
         return buildFallbackStepResponse(equipmentDef, stepNumber)
       }
+    },
+
+    // Generate content for a single recipe tour stop.
+    // Returns a TourStop with title, body, and target selector.
+    async generateTourStop(
+      recipe: Recipe,
+      kitchen: Kitchen,
+      stopIndex: number,
+    ): Promise<TourStop> {
+      const stopList = buildTourStopList(recipe)
+      const stop = stopList[stopIndex]
+      if (!stop) throw new Error(`Invalid tour stop index: ${stopIndex}`)
+
+      const prompt = buildTourStopPrompt(recipe, kitchen, stop.stopType, stop.stepIndex)
+
+      try {
+        const raw = await ask(config, prompt)
+        // Parse JSON response
+        const cleaned = raw
+          .replace(/^```(?:json)?\s*/m, '')
+          .replace(/\s*```\s*$/m, '')
+          .trim()
+        const match = cleaned.match(/\{[\s\S]*\}/)
+        if (match) {
+          const parsed = JSON.parse(match[0]) as { title: string; body: string }
+          if (parsed.title && parsed.body) {
+            return { title: parsed.title, body: parsed.body, targetSelector: stop.targetSelector }
+          }
+        }
+      } catch {
+        // Fall through to error
+      }
+
+      throw new Error('Could not generate tour stop')
     },
 
     // Answer a free-form question from the user.
