@@ -3,13 +3,17 @@
 //   1. The chef's hat — always visible, never pushy. Premium floating button.
 //   2. The toast — a gentle tap on the shoulder for real problems.
 // The panel uses glass morphism with spring animations.
+//
+// State management extracted to hooks:
+//   use-toast-manager.ts — toast lifecycle
+//   use-hat-menu.ts — hat state machine + sous chef API calls
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import type { Recipe, Kitchen as KitchenType, SousChefConfig, HatOption } from '../types.ts'
+import { useEffect, useRef } from 'react'
+import type { Recipe, Kitchen as KitchenType, SousChefConfig } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
-import { createSousChef } from '../sous-chef/sous-chef.ts'
-import { getProvider } from '../sous-chef/providers.ts'
 import { checkRecipeReadiness } from '../runner/recipe-readiness.ts'
+import { useToastManager, type Toast } from './hooks/use-toast-manager.ts'
+import { useHatMenu } from './hooks/use-hat-menu.ts'
 import MarkdownText from './MarkdownText.tsx'
 import styles from './SousChef.module.css'
 
@@ -19,62 +23,6 @@ interface Props {
   kitchen: KitchenType
   runState?: RunState | null
   onStartTour?: () => void
-}
-
-type HatState = 'closed' | 'options' | 'asking'
-
-interface Toast {
-  id: number
-  message: string
-  type: 'info' | 'warning' | 'error'
-  persistent?: boolean
-  exiting?: boolean
-}
-
-let toastCounter = 0
-
-type ErrorSeverity = 'blocking' | 'transient'
-
-interface SousChefError {
-  message: string
-  severity: ErrorSeverity
-}
-
-// Map API errors to Maria-friendly messages.
-// "blocking" errors need a toast — they won't resolve without user action.
-// "transient" errors can live in the panel — retrying may fix them.
-function sousChefError(err: unknown, config: SousChefConfig | null): SousChefError {
-  const msg = err instanceof Error ? err.message : String(err)
-  const status = (err as Record<string, unknown>)?.status as number | undefined
-  const providerLabel = config ? getProvider(config.provider).label : 'your AI provider'
-  const keyLink = config ? getProvider(config.provider).keyLink : ''
-
-  if (msg.toLowerCase().includes('credit balance') || msg.toLowerCase().includes('billing')) {
-    return { severity: 'blocking', message: `Your ${providerLabel} account has no credits. Add some at ${keyLink.replace('https://', '')} to continue.` }
-  }
-  if (status === 401 || msg.includes('401')) {
-    return { severity: 'blocking', message: `Your ${providerLabel} API key doesn't look right. Change your key in Your Kitchen.` }
-  }
-  if (status === 403 || msg.includes('403')) {
-    return { severity: 'blocking', message: `Your ${providerLabel} key doesn't have permission to use this model. Check your plan.` }
-  }
-  if (status === 404 || msg.includes('404') || msg.toLowerCase().includes('not found')) {
-    if (config?.provider === 'ollama') {
-      const modelName = config.model ?? 'llama3.2'
-      return { severity: 'blocking', message: `Ollama can't find that model. Run "ollama pull ${modelName}" in your terminal, then try again.` }
-    }
-    return { severity: 'blocking', message: `The sous chef model isn't available on your ${providerLabel} account. Check your plan.` }
-  }
-  if (status === 429 || msg.includes('429') || msg.includes('rate')) {
-    return { severity: 'transient', message: "The sous chef is a bit busy right now. Wait a moment and try again." }
-  }
-  if (msg.includes('fetch') || msg.includes('network') || msg.toLowerCase().includes('failed to fetch')) {
-    if (config?.provider === 'ollama') {
-      return { severity: 'blocking', message: "Can't reach Ollama — make sure it's running. Open a terminal and run \"ollama serve\", then try again." }
-    }
-    return { severity: 'transient', message: "Can't reach the sous chef — check your internet connection and try again." }
-  }
-  return { severity: 'transient', message: `I couldn't reach the sous chef. Error: ${msg}` }
 }
 
 function LoadingDots() {
@@ -87,14 +35,27 @@ function LoadingDots() {
   )
 }
 
+function toastClass(toast: Toast): string {
+  const classes = [styles.toast]
+  if (toast.type === 'info') classes.push(styles.toastInfo)
+  if (toast.type === 'warning') classes.push(styles.toastWarning)
+  if (toast.type === 'error') classes.push(styles.toastError)
+  if (toast.exiting) classes.push(styles.toastExiting)
+  return classes.join(' ')
+}
+
 export default function SousChef({ sousChefConfig, recipe, kitchen, runState: externalRunState, onStartTour }: Props) {
-  const [hatState, setHatState] = useState<HatState>('closed')
-  const [options, setOptions] = useState<HatOption[]>([])
-  const [loadingOptions, setLoadingOptions] = useState(false)
-  const [question, setQuestion] = useState('')
-  const [answer, setAnswer] = useState('')
-  const [loadingAnswer, setLoadingAnswer] = useState(false)
-  const [toasts, setToasts] = useState<Toast[]>([])
+  const { toasts, addToast, dismissToast } = useToastManager()
+  const {
+    hatState, options, loadingOptions,
+    question, setQuestion, answer, loadingAnswer,
+    handleOpenHat, handleSelectOption, handleAsk,
+    closeHat, goBackToOptions,
+  } = useHatMenu({
+    sousChefConfig, recipe, kitchen,
+    runState: externalRunState, onStartTour, addToast,
+  })
+
   const panelRef = useRef<HTMLDivElement>(null)
   const hatButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -102,15 +63,13 @@ export default function SousChef({ sousChefConfig, recipe, kitchen, runState: ex
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape' && hatState !== 'closed') {
-        setHatState('closed')
-        setAnswer('')
-        setQuestion('')
+        closeHat()
         hatButtonRef.current?.focus()
       }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [hatState])
+  }, [hatState, closeHat])
 
   // Focus the panel when it opens
   useEffect(() => {
@@ -130,7 +89,6 @@ export default function SousChef({ sousChefConfig, recipe, kitchen, runState: ex
       prevRecipeNameRef.current = null
       return
     }
-    // Only fire once per recipe (guard against re-renders)
     if (recipe.name === prevRecipeNameRef.current) return
     prevRecipeNameRef.current = recipe.name
 
@@ -145,128 +103,6 @@ export default function SousChef({ sousChefConfig, recipe, kitchen, runState: ex
     addToast(`This recipe needs ${list}. Connect it in Your Kitchen before running.`, 'info')
   // kitchen intentionally excluded — only fires once per recipe load, not on every equipment update
   }, [recipe])
-
-  async function handleOpenHat() {
-    if (hatState !== 'closed') {
-      setHatState('closed')
-      setAnswer('')
-      setQuestion('')
-      return
-    }
-
-    if (!sousChefConfig) {
-      setOptions([{ label: 'Connect a sous chef in Your Kitchen to get help here' }])
-      setHatState('options')
-      return
-    }
-
-    setHatState('options')
-    setLoadingOptions(true)
-
-    try {
-      const sousChef = createSousChef(sousChefConfig)
-      // Pass the current step name from run state so the sous chef can give
-      // contextual suggestions (e.g., "Your Shopify connection is missing")
-      const currentStep = externalRunState?.steps.find(s => s.status === 'running')
-        ?? externalRunState?.steps.find(s => s.status === 'failed')
-      const opts = await sousChef.getHatOptions(recipe, currentStep?.name ?? null, kitchen)
-      setOptions(opts)
-    } catch (err) {
-      console.error('[sous chef] getHatOptions failed:', err)
-      const { message, severity } = sousChefError(err, sousChefConfig)
-      if (severity === 'blocking') {
-        addToast(message, 'error')
-        setHatState('closed')
-      } else {
-        const fallbackOptions: HatOption[] = [
-          { label: 'Check if my kitchen is ready' },
-        ]
-        if (recipe) {
-          fallbackOptions.push({ label: 'Walk me through this recipe', action: 'tour' })
-        }
-        fallbackOptions.push({ label: 'I want to ask something else', action: 'ask-anything' })
-        setOptions(fallbackOptions)
-      }
-    } finally {
-      setLoadingOptions(false)
-    }
-  }
-
-  async function handleSelectOption(option: HatOption) {
-    // Dispatch on structured action — deterministic, not LLM-dependent
-    if (option.action === 'ask-anything') {
-      setHatState('asking')
-      return
-    }
-    if (option.action === 'tour' && recipe && onStartTour) {
-      setHatState('closed')
-      setAnswer('')
-      setQuestion('')
-      onStartTour()
-      return
-    }
-    setHatState('asking')
-    setQuestion(option.label)
-    await handleAsk(option.label)
-  }
-
-  const handleAsk = useCallback(async (q: string = question) => {
-    if (!q.trim() || !sousChefConfig) return
-    setLoadingAnswer(true)
-    setAnswer('')
-
-    try {
-      const sousChef = createSousChef(sousChefConfig)
-      const response = await sousChef.ask(q, recipe, kitchen)
-      setAnswer(response)
-    } catch (err) {
-      console.error('[sous chef] ask failed:', err)
-      const { message, severity } = sousChefError(err, sousChefConfig)
-      if (severity === 'blocking') {
-        addToast(message, 'error')
-        setHatState('closed')
-      } else {
-        setAnswer(message)
-      }
-    } finally {
-      setLoadingAnswer(false)
-    }
-  }, [sousChefConfig, kitchen, question, recipe])
-
-  function addToast(message: string, type: Toast['type'] = 'info') {
-    const id = ++toastCounter
-    const persistent = type === 'error'
-    setToasts(prev => [...prev, { id, message, type, persistent }])
-    if (!persistent) {
-      setTimeout(() => {
-        setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t))
-      }, 5500)
-      setTimeout(() => {
-        setToasts(prev => prev.filter(t => t.id !== id))
-      }, 6000)
-    }
-  }
-
-  function dismissToast(id: number) {
-    setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t))
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id))
-    }, 400)
-  }
-
-  // Expose addToast for the recipe runner
-  useEffect(() => {
-    (window as unknown as Record<string, unknown>).__aicard_toast = addToast
-  }, [])
-
-  function toastClass(toast: Toast): string {
-    const classes = [styles.toast]
-    if (toast.type === 'info') classes.push(styles.toastInfo)
-    if (toast.type === 'warning') classes.push(styles.toastWarning)
-    if (toast.type === 'error') classes.push(styles.toastError)
-    if (toast.exiting) classes.push(styles.toastExiting)
-    return classes.join(' ')
-  }
 
   const isOpen = hatState !== 'closed'
 
@@ -376,7 +212,7 @@ export default function SousChef({ sousChefConfig, recipe, kitchen, runState: ex
                   <MarkdownText text={answer} className={styles.markdown} />
                   <button
                     className={styles.backLink}
-                    onClick={() => { setAnswer(''); setQuestion(''); setHatState('options') }}
+                    onClick={goBackToOptions}
                   >
                     ← Back to options
                   </button>

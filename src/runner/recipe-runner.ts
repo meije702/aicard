@@ -1,6 +1,7 @@
 // The recipe runner: orchestrates parser → executors → kitchen state into a running recipe.
 // This is the engine. The UI calls it; the sous chef monitors it.
 //
+// Types live in run-types.ts.
 // Persistence (save/load/clear run state) lives in run-state-repository.ts.
 // Pre-flight readiness checks live in recipe-readiness.ts.
 
@@ -8,14 +9,38 @@ import type {
     Recipe,
     CardConfig,
     RecipeContext,
-    CardResult,
     Kitchen,
 } from '../types.ts'
-import type { CardExecutor, OnInteraction, StepInteraction } from '../cards/card-executor.ts'
+import type { OnInteraction, StepInteraction } from '../cards/card-executor.ts'
 import { listenExecutor } from '../cards/listen.ts'
 import { waitExecutor } from '../cards/wait.ts'
 import { sendMessageExecutor } from '../cards/send-message.ts'
 import { resolveAllValues } from '../cards/resolve-value.ts'
+import type {
+    ExecutorRegistry,
+    StepStatus,
+    StepState,
+    RunState,
+    OnStateChange,
+    OnStepInteraction,
+    GetStepConfig,
+    OnStepReview,
+    OnSubRecipe,
+} from './run-types.ts'
+
+// Re-export types so existing consumers don't need to change their imports.
+export type {
+    ExecutorRegistry,
+    StepStatus,
+    ReadinessBlocker,
+    StepState,
+    RunState,
+    OnStateChange,
+    OnStepInteraction,
+    GetStepConfig,
+    OnStepReview,
+    OnSubRecipe,
+} from './run-types.ts'
 
 // Replace {step N: key} references in a config with human-readable placeholders
 // so initial step descriptions never show raw template syntax to the user.
@@ -32,10 +57,6 @@ function stripStepRefs(config: CardConfig): CardConfig {
     return result
 }
 
-// Registry of executors keyed by card type. Injected into runRecipe so tests
-// can pass stub executors without touching the production defaults.
-export type ExecutorRegistry = Record<string, CardExecutor>
-
 // Production defaults — all card types the system currently supports.
 // Import this and pass it to runRecipe; or omit it to use the default.
 export const defaultExecutors: ExecutorRegistry = {
@@ -43,62 +64,6 @@ export const defaultExecutors: ExecutorRegistry = {
     wait: waitExecutor,
     'send-message': sendMessageExecutor,
 }
-
-export type StepStatus = 'pending' | 'running' | 'complete' | 'failed' | 'skipped'
-
-// A typed readiness blocker: equipment the user needs to connect, or a card
-// type that isn't in the pantry. Kept separate so the UI can render each kind
-// with the right message and action.
-export interface ReadinessBlocker {
-    kind: 'equipment' | 'card-type'
-    label: string
-}
-
-export interface StepState {
-    number: number
-    name: string
-    description: string    // the describe() output — plain English
-    status: StepStatus
-    result?: CardResult
-    // Set when a step is waiting for user input via the interaction callback
-    pendingInteraction?: StepInteraction
-}
-
-export interface RunState {
-    runId: string           // unique run identity — prevents same-name recipe collisions in localStorage
-    recipeName: string
-    steps: StepState[]
-    context: RecipeContext
-    complete: boolean
-    cancelled?: boolean     // true when the user stopped the run mid-flight
-    errors: string[]
-}
-
-// Callback fired whenever the run state changes (a step starts, completes, etc.)
-export type OnStateChange = (state: RunState) => void
-
-// Callback fired when a step needs user input. The UI renders the interaction
-// form; when the user submits, the returned Promise resolves with their values.
-export type OnStepInteraction = (
-    stepIndex: number,
-    interaction: StepInteraction
-) => Promise<Record<string, string>>
-
-// Callback the runner calls just before executing each step to pick up any
-// config the user tweaked after the run started. Return null to use the
-// recipe's original config for that step.
-export type GetStepConfig = (stepIndex: number) => CardConfig | null
-
-// Callback invoked before each step starts. Resolves when the user confirms
-// (or the review timeout fires) — giving Level 2 users a chance to tweak
-// the step before it executes. Omit for Level 1 / test runs.
-export type OnStepReview = (stepIndex: number) => Promise<void>
-
-// Callback invoked when a sub-recipe step is reached (Level 3 — Combining).
-// Receives the recipe name and returns a CardResult. If omitted, sub-recipe
-// steps are skipped silently (Level 1/2 backwards-compatible behaviour).
-// Implement with createSubRecipeRunner from sub-recipe-runner.ts.
-export type OnSubRecipe = (recipeName: string) => Promise<CardResult>
 
 // Run a recipe against the kitchen, calling onStateChange after each step.
 // onStepInteraction bridges executor interaction requests to the UI.

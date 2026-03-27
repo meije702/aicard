@@ -1,15 +1,21 @@
 // The main kitchen view — Maria's first impression.
 // This needs to feel warm, inviting, and clear — not like a settings panel.
+//
+// Decomposed: HouseStyleForm and RecipesList extracted to kitchen/ directory.
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import type { Kitchen as KitchenType, Recipe, SousChefSetup } from '../types.ts'
 import { getProvider } from '../sous-chef/providers.ts'
-import SousChefProviders from './SousChefProviders.tsx'
+import SousChefProviders from './providers/SousChefProviders.tsx'
+import HouseStyleForm from './kitchen/HouseStyleForm.tsx'
+import RecipesList from './kitchen/RecipesList.tsx'
+import { equipmentIcon } from './equipment-icon.ts'
 import styles from './Kitchen.module.css'
 
 interface Props {
   kitchen: KitchenType
   onOpenRecipe: () => void
+  onOpenLiteParse: () => void
   onOpenKitchenRecipe: (recipe: Recipe) => void
   onConnectEquipment: (name: string) => void
   sousChefSetup: SousChefSetup
@@ -17,18 +23,13 @@ interface Props {
   onHouseStyleChange: (houseStyle: string) => void
 }
 
-import { equipmentIcon } from './equipment-icon.ts'
-
-export default function Kitchen({ kitchen, onOpenRecipe, onOpenKitchenRecipe, onConnectEquipment, sousChefSetup, onSousChefSetupChange, onHouseStyleChange }: Props) {
+export default function Kitchen({ kitchen, onOpenRecipe, onOpenLiteParse, onOpenKitchenRecipe, onConnectEquipment, sousChefSetup, onSousChefSetupChange, onHouseStyleChange }: Props) {
   const connectedEquipment = kitchen.equipment.filter(e => e.connected)
   const pendingEquipment = kitchen.equipment.filter(e => !e.connected && e.pendingSetup)
   const isConnected = sousChefSetup.active !== null
   const activeProvider = isConnected ? getProvider(sousChefSetup.active!) : null
   // Collapse the setup UI after initial config — Finding 10
   const [setupExpanded, setSetupExpanded] = useState(!isConnected)
-  const [houseStyleDraft, setHouseStyleDraft] = useState(kitchen.houseStyle ?? '')
-  const houseStyleDirty = houseStyleDraft !== (kitchen.houseStyle ?? '')
-  const houseStyleRef = useRef<HTMLTextAreaElement>(null)
 
   return (
     <div className={styles.container}>
@@ -140,84 +141,18 @@ export default function Kitchen({ kitchen, onOpenRecipe, onOpenKitchenRecipe, on
       </section>
 
       {/* House Style */}
-      <section className={styles.sectionCard} aria-label="House style">
-        <div className={styles.sectionLabel}>House Style</div>
-        {!kitchen.houseStyle && !houseStyleDirty ? (
-          <p className={styles.emptyState}>
-            Tell your sous chef how you write — your tone, your language, how you sign off.
-            This shapes every message your recipes compose.
-          </p>
-        ) : null}
-        <textarea
-          ref={houseStyleRef}
-          className={styles.houseStyleTextarea}
-          placeholder="e.g. I'm informal and warm. I use first names. I sign off with 'Warme groet, Maria'. Keep emails short."
-          value={houseStyleDraft}
-          onChange={e => setHouseStyleDraft(e.target.value)}
-          rows={4}
-        />
-        {houseStyleDirty && (
-          <div className={styles.houseStyleActions}>
-            <button
-              className={styles.houseStyleSave}
-              onClick={() => onHouseStyleChange(houseStyleDraft)}
-            >
-              Save
-            </button>
-            <button
-              className={styles.houseStyleCancel}
-              onClick={() => setHouseStyleDraft(kitchen.houseStyle ?? '')}
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-      </section>
+      <HouseStyleForm
+        houseStyle={kitchen.houseStyle}
+        onSave={onHouseStyleChange}
+      />
 
       {/* Recipes */}
-      <section className={styles.sectionCard} aria-label="Your recipes">
-        <div className={styles.sectionLabel}>Recipes</div>
-
-        {/* Stored recipes (including the bundled starter) */}
-        {kitchen.recipes.length > 0 && (
-          <div className={styles.recipeList} role="list">
-            {kitchen.recipes.map(recipe => (
-              <button
-                key={recipe.name}
-                className={styles.recipeCard}
-                onClick={() => onOpenKitchenRecipe(recipe)}
-                aria-label={`Open recipe: ${recipe.name}`}
-              >
-                <span className={styles.recipeCardIcon} aria-hidden="true">📖</span>
-                <div className={styles.recipeCardBody}>
-                  <div className={styles.recipeCardName}>{recipe.name}</div>
-                  {recipe.purpose && (
-                    <div className={styles.recipeCardPurpose}>{recipe.purpose}</div>
-                  )}
-                </div>
-                <span className={styles.recipeCardArrow} aria-hidden="true">→</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* File picker — always available to add more recipes */}
-        <button
-          className={kitchen.recipes.length > 0 ? styles.recipeDropZoneSmall : styles.recipeDropZone}
-          onClick={onOpenRecipe}
-          aria-label="Open a recipe file from your computer"
-        >
-          <span className={styles.recipeDropIcon} aria-hidden="true">📂</span>
-          <div className={styles.recipeDropTitle}>
-            {kitchen.recipes.length > 0 ? 'Open another recipe' : 'Open a recipe'}
-          </div>
-          {kitchen.recipes.length === 0 && (
-            <div className={styles.recipeDropHint}>
-              Choose a <code>.recipe.md</code> file from your computer
-            </div>
-          )}
-        </button>
-      </section>
+      <RecipesList
+        recipes={kitchen.recipes}
+        onOpenRecipe={onOpenRecipe}
+        onOpenLiteParse={onOpenLiteParse}
+        onOpenKitchenRecipe={onOpenKitchenRecipe}
+      />
     </div>
   )
 }

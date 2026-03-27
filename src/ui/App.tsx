@@ -1,29 +1,30 @@
-import { useLayoutEffect, useState } from 'react'
+// App — thin composition manifest.
+// Wires screens, state, and overlays together. Business logic lives in hooks and modules.
+
+import { useState } from 'react'
 import type { Recipe, SousChefSetup } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import { parseRecipe } from '../parser/recipe-parser.ts'
-import { loadKitchen, saveKitchen, upsertEquipment, upsertRecipe, setHouseStyle } from '../kitchen/kitchen-state.ts'
+import { loadKitchen, saveKitchen, upsertRecipe, setHouseStyle } from '../kitchen/kitchen-state.ts'
 import { appendJournalEntry } from '../kitchen/journal.ts'
 import thankYouRecipeMd from '../fixtures/recipes/thank-you-follow-up.recipe.md?raw'
-import { createEquipment } from '../kitchen/equipment.ts'
 import { getEquipmentDefinition } from '../fixtures/equipment/index.ts'
 import { loadSousChefSetup, saveSousChefSetup, deriveActiveConfig } from './sous-chef-storage.ts'
+import { useTheme } from './hooks/use-theme.ts'
+import { useEquipmentWizard } from './hooks/use-equipment-wizard.ts'
 import Kitchen from './Kitchen.tsx'
 import RecipeView from './RecipeView.tsx'
 import SousChef from './SousChef.tsx'
 import EquipmentWizard from './wizard/EquipmentWizard.tsx'
 import RecipeTour from './tour/RecipeTour.tsx'
+import LiteParseSpike from './LiteParseSpike.tsx'
 import styles from './App.module.css'
 
-type Screen = 'kitchen' | 'recipe'
-
-function getInitialTheme(): 'light' | 'dark' {
-  const stored = localStorage.getItem('aicard:theme')
-  if (stored === 'dark' || stored === 'light') return stored
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-}
+type Screen = 'kitchen' | 'recipe' | 'liteparse'
 
 export default function App() {
+  const { theme, toggleTheme } = useTheme()
+
   const [screen, setScreen] = useState<Screen>('kitchen')
   const [kitchen, setKitchen] = useState(() => {
     const loaded = loadKitchen()
@@ -38,27 +39,10 @@ export default function App() {
     }
     return loaded
   })
-  const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme)
 
-  // useLayoutEffect runs synchronously before paint, preventing a theme flash
-  // on initial load. useEffect would apply after paint, briefly showing the
-  // wrong theme on first render.
-  useLayoutEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-  }, [theme])
-
-  function toggleTheme() {
-    const next = theme === 'light' ? 'dark' : 'light'
-    setTheme(next)
-    try { localStorage.setItem('aicard:theme', next) } catch { /* cosmetic — safe to swallow */ }
-  }
   const [activeRecipe, setActiveRecipe] = useState<Recipe | null>(null)
   const [activeRunState, setActiveRunState] = useState<RunState | null>(null)
   const [recipeParseErrors, setRecipeParseErrors] = useState<string[]>([])
-  // Equipment connection dialog state
-  const [connectingEquipment, setConnectingEquipment] = useState<string | null>(null)
-
-  // Recipe tour state
   const [tourActive, setTourActive] = useState(false)
 
   // Sous chef multi-provider setup — persisted to localStorage
@@ -75,6 +59,14 @@ export default function App() {
     setKitchen(updated)
     saveKitchen(updated)
   }
+
+  const {
+    connectingEquipment,
+    handleConnectEquipment,
+    handleEquipmentConnected,
+    handleSetupProgress,
+    cancelWizard,
+  } = useEquipmentWizard({ kitchen, persistKitchen })
 
   function handleOpenRecipeFile() {
     const input = document.createElement('input')
@@ -94,35 +86,6 @@ export default function App() {
       setScreen('recipe')
     }
     input.click()
-  }
-
-  function handleConnectEquipment(name: string) {
-    setConnectingEquipment(name)
-  }
-
-  function handleEquipmentConnected(config: Record<string, string>) {
-    if (!connectingEquipment) return
-    const equipment = createEquipment(connectingEquipment, connectingEquipment.toLowerCase())
-    // Equipment in 'compose' mode (e.g. Gmail) hands off to the user's own app
-    // rather than acting autonomously — mark it as 'handoff' so the UI can be
-    // honest about what it can do (Finding 3).
-    const mode: 'full' | 'handoff' = config.mode === 'compose' ? 'handoff' : 'full'
-    // Clear pendingSetup on connect (wizard completed)
-    const connected = { ...equipment, connected: true, config, mode, pendingSetup: undefined }
-    persistKitchen(upsertEquipment(kitchen, connected))
-    setConnectingEquipment(null)
-  }
-
-  function handleSetupProgress(step: number, collectedConfig: Record<string, string>) {
-    if (!connectingEquipment) return
-    const existing = kitchen.equipment.find(
-      e => e.name.toLowerCase() === connectingEquipment.toLowerCase()
-    ) ?? createEquipment(connectingEquipment, connectingEquipment.toLowerCase())
-    const updated = {
-      ...existing,
-      pendingSetup: { step, startedAt: existing.pendingSetup?.startedAt ?? new Date().toISOString(), collectedConfig },
-    }
-    persistKitchen(upsertEquipment(kitchen, updated))
   }
 
   return (
@@ -151,6 +114,7 @@ export default function App() {
           <Kitchen
             kitchen={kitchen}
             onOpenRecipe={handleOpenRecipeFile}
+            onOpenLiteParse={() => setScreen('liteparse')}
             onOpenKitchenRecipe={(recipe) => {
               setRecipeParseErrors([])
               setActiveRecipe(recipe)
@@ -179,6 +143,21 @@ export default function App() {
               setKitchen(updated)
               saveKitchen(updated)
             }}
+          />
+        )}
+
+        {screen === 'liteparse' && (
+          <LiteParseSpike
+            sousChefConfig={activeSousChefConfig}
+            onRecipeParsed={(_markdown, parsed) => {
+              if (parsed.success) {
+                const updated = upsertRecipe(kitchen, parsed.recipe)
+                persistKitchen(updated)
+                setActiveRecipe(parsed.recipe)
+                setScreen('recipe')
+              }
+            }}
+            onBack={() => setScreen('kitchen')}
           />
         )}
       </main>
@@ -232,7 +211,7 @@ export default function App() {
             equipmentDefinition={def ?? null}
             sousChefConfig={activeSousChefConfig}
             onConnect={handleEquipmentConnected}
-            onCancel={() => setConnectingEquipment(null)}
+            onCancel={cancelWizard}
             pendingSetup={existing?.pendingSetup}
             onSetupProgress={handleSetupProgress}
           />
