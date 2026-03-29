@@ -1,5 +1,5 @@
 // StepItem: renders a single step in the recipe timeline.
-import type { RecipeStep } from '../types.ts'
+import type { RecipeStep, CardDefinition } from '../types.ts'
 import type { StepState } from '../runner/recipe-runner.ts'
 import type { PendingInteraction } from './hooks/use-recipe-interaction.ts'
 import CardConfig from './CardConfig.tsx'
@@ -47,6 +47,7 @@ interface Props {
   isRunning: boolean
   reviewingStepIndex: number | null
   pendingInteraction: PendingInteraction | null
+  pantry: CardDefinition[]
   onTweakOpen: (index: number) => void
   onConfigSave: (index: number, config: Record<string, string>) => void
   onConfigCancel: (index: number) => void
@@ -57,7 +58,7 @@ interface Props {
 
 export default function StepItem({
   step, index, stepRunState, isEditing, isRunning,
-  reviewingStepIndex, pendingInteraction,
+  reviewingStepIndex, pendingInteraction, pantry,
   onTweakOpen, onConfigSave, onConfigCancel,
   onReviewConfirm, onReviewTweakOpen, onInteractionSubmit,
 }: Props) {
@@ -143,13 +144,21 @@ export default function StepItem({
             />
           )}
 
-          {isEditing && isCardStep && (
-            <CardConfig
-              step={step}
-              onSave={config => onConfigSave(index, config)}
-              onCancel={() => onConfigCancel(index)}
-            />
-          )}
+          {isEditing && isCardStep && (() => {
+            const cardDef = pantry.find(c => c.type === step.card)
+            const fieldDescriptions: Record<string, string> = {}
+            for (const f of cardDef?.configFields ?? []) {
+              fieldDescriptions[f.name] = f.description
+            }
+            return (
+              <CardConfig
+                step={step}
+                fieldDescriptions={fieldDescriptions}
+                onSave={config => onConfigSave(index, config)}
+                onCancel={() => onConfigCancel(index)}
+              />
+            )
+          })()}
         </div>
       </div>
     </li>

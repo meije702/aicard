@@ -5,9 +5,10 @@ import { useState } from 'react'
 import type { Recipe, SousChefSetup } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import { parseRecipe } from '../parser/recipe-parser.ts'
-import { loadKitchen, saveKitchen, upsertRecipe, setHouseStyle } from '../kitchen/kitchen-state.ts'
+import { loadKitchen, saveKitchen, upsertRecipe, upsertCardDefinition, setHouseStyle } from '../kitchen/kitchen-state.ts'
 import { appendJournalEntry } from '../kitchen/journal.ts'
 import thankYouRecipeMd from '../fixtures/recipes/thank-you-follow-up.recipe.md?raw'
+import { builtInCards } from '../fixtures/pantry/built-in-cards.ts'
 import { getEquipmentDefinition } from '../fixtures/equipment/index.ts'
 import { loadSousChefSetup, saveSousChefSetup, deriveActiveConfig } from './sous-chef-storage.ts'
 import { useTheme } from './hooks/use-theme.ts'
@@ -27,17 +28,22 @@ export default function App() {
 
   const [screen, setScreen] = useState<Screen>('kitchen')
   const [kitchen, setKitchen] = useState(() => {
-    const loaded = loadKitchen()
+    let k = loadKitchen()
     // Seed with the starter recipe on first open — Finding 1
-    if (loaded.recipes.length === 0) {
+    if (k.recipes.length === 0) {
       const parsed = parseRecipe(thankYouRecipeMd)
       if (parsed.success) {
-        const seeded = upsertRecipe(loaded, parsed.recipe)
-        saveKitchen(seeded)
-        return seeded
+        k = upsertRecipe(k, parsed.recipe)
       }
     }
-    return loaded
+    // Seed built-in card definitions so the pantry is always populated
+    if (k.pantry.length === 0) {
+      for (const card of builtInCards) {
+        k = upsertCardDefinition(k, card)
+      }
+    }
+    saveKitchen(k)
+    return k
   })
 
   const [activeRecipe, setActiveRecipe] = useState<Recipe | null>(null)

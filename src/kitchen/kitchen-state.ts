@@ -108,6 +108,7 @@ export function upsertCardDefinition(kitchen: Kitchen, card: CardDefinition): Ki
 function normaliseKitchenOnLoad(kitchen: Kitchen): Kitchen {
   return {
     ...kitchen,
+    pantry: kitchen.pantry ?? [],
     houseStyle: kitchen.houseStyle ?? '',
     journal: kitchen.journal ?? [],
   }

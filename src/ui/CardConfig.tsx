@@ -6,13 +6,18 @@ import { useState } from 'react'
 import type { CardStep } from '../types.ts'
 import styles from './CardConfig.module.css'
 
+function toTitleCase(s: string): string {
+  return s.replace(/\b\w/g, c => c.toUpperCase())
+}
+
 interface Props {
   step: CardStep
+  fieldDescriptions?: Record<string, string>
   onSave: (config: Record<string, string>) => void
   onCancel: () => void
 }
 
-export default function CardConfig({ step, onSave, onCancel }: Props) {
+export default function CardConfig({ step, fieldDescriptions, onSave, onCancel }: Props) {
   const [config, setConfig] = useState<Record<string, string>>({ ...step.config })
 
   function handleChange(key: string, value: string) {
@@ -24,18 +29,25 @@ export default function CardConfig({ step, onSave, onCancel }: Props) {
       <p className={styles.configTitle}>Settings</p>
 
       <div className={styles.configFields}>
-        {Object.entries(config).map(([key, value]) => (
-          <label key={key} className={styles.configField}>
-            <span className={styles.configLabel}>{key}</span>
-            <input
-              type="text"
-              className={styles.configInput}
-              value={value}
-              onChange={e => handleChange(key, e.target.value)}
-              aria-label={key}
-            />
-          </label>
-        ))}
+        {Object.entries(config).map(([key, value]) => {
+          const description = fieldDescriptions?.[key]
+          const label = toTitleCase(key)
+          return (
+            <label key={key} className={styles.configField}>
+              <span className={styles.configLabel}>{label}</span>
+              <input
+                type="text"
+                className={styles.configInput}
+                value={value}
+                onChange={e => handleChange(key, e.target.value)}
+                aria-label={label}
+              />
+              {description && (
+                <span className={styles.configFieldHint}>{description}</span>
+              )}
+            </label>
+          )
+        })}
       </div>
 
       <p className={styles.configHint}>Changes apply to this run only. The original recipe file is not modified.</p>

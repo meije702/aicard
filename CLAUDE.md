@@ -36,3 +36,7 @@ See the domain vocabulary table in AGENTS.md. Use it consistently in code, comme
 ## The seven principles
 
 See AGENTS.md for the condensed version. The full document is at `docs/Seven_Principles_of_Engineering_Thinking.md`.
+
+## Engineering thinking enforcement
+
+After completing any coding task (new code, modifications, refactors, bug fixes), invoke the `/engineering-thinking-code` skill to review the changes against the seven principles before considering the work done.

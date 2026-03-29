@@ -173,6 +173,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
               isRunning={execution.isRunning}
               reviewingStepIndex={review.reviewingStepIndex}
               pendingInteraction={interaction.pendingInteraction}
+              pantry={kitchen.pantry}
               onTweakOpen={setEditingStepIndex}
               onConfigSave={handleConfigSave}
               onConfigCancel={handleConfigCancel}
