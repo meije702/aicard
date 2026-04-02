@@ -12,6 +12,8 @@ import { useRecipeInteraction } from './hooks/use-recipe-interaction.ts'
 import { useRecipeReview } from './hooks/use-recipe-review.ts'
 import EquipmentPanel from './EquipmentPanel.tsx'
 import StepItem from './StepItem.tsx'
+import RecipeWarningBanners from './recipe/RecipeWarningBanners.tsx'
+import RecipeRunArea from './recipe/RecipeRunArea.tsx'
 import styles from './RecipeView.module.css'
 
 interface Props {
@@ -121,44 +123,15 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
         onConnectEquipment={onConnectEquipment}
       />
 
-      {hasWaitSteps && execution.isRunning && (
-        <div className={styles.warningBanner} role="status">
-          <strong>Keep this tab open.</strong> This recipe has a Wait step.
-          Closing the tab will pause the recipe.
-        </div>
-      )}
-
-      {execution.isPaused && execution.runState && (
-        <div className={styles.pausedBanner} role="status">
-          <div className={styles.pausedBannerContent}>
-            <span className={styles.pausedIcon} aria-hidden="true">⏸</span>
-            <div className={styles.pausedText}>
-              <strong>This recipe was paused when the tab closed.</strong>
-              <span className={styles.pausedDetail}>
-                {(() => {
-                  const lastDone = [...execution.runState.steps].reverse().find(
-                    s => s.status === 'complete' || s.status === 'failed' || s.status === 'skipped'
-                  )
-                  return lastDone
-                    ? `Last completed: step ${lastDone.number} — ${lastDone.name}`
-                    : 'No steps had finished yet.'
-                })()}
-              </span>
-              <span className={styles.pausedDetail}>
-                Resume where you left off, or start over.
-              </span>
-            </div>
-          </div>
-          <div className={styles.pausedActions}>
-            <button className={styles.resumeButton} onClick={handleRun} disabled={!ready}>
-              Resume
-            </button>
-            <button className={styles.startFreshButton} onClick={execution.handleStartFresh}>
-              Start fresh
-            </button>
-          </div>
-        </div>
-      )}
+      <RecipeWarningBanners
+        hasWaitSteps={hasWaitSteps}
+        isRunning={execution.isRunning}
+        isPaused={execution.isPaused}
+        runState={execution.runState}
+        ready={ready}
+        onResume={handleRun}
+        onStartFresh={execution.handleStartFresh}
+      />
 
       <div className={styles.stepsCard}>
         <div className={styles.sectionLabel}>Steps</div>
@@ -188,43 +161,16 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
         </ol>
       </div>
 
-      <div className={styles.runArea} aria-live="polite" data-tour="run-area">
-        {execution.isRunning ? (
-          <button className={styles.stopButton} onClick={handleStop} aria-label="Stop recipe">
-            Stop
-          </button>
-        ) : !execution.isPaused ? (
-          <button
-            className={styles.runButton}
-            onClick={handleRun}
-            disabled={!ready}
-            aria-label="Run recipe"
-          >
-            Run recipe
-          </button>
-        ) : null}
-
-        {!ready && !execution.isRunning && (
-          <div className={styles.runHint}>
-            {equipmentBlockers.length > 0 && (
-              <p>Connect {equipmentBlockers.map(b => b.label).join(' and ')} to run this recipe.</p>
-            )}
-            {cardTypeBlockers.length > 0 && (
-              <p>
-                {cardTypeBlockers.length === 1
-                  ? `The "${cardTypeBlockers[0].label}" card isn't in your pantry yet.`
-                  : `Cards not in your pantry: ${cardTypeBlockers.map(b => `"${b.label}"`).join(', ')}.`}
-              </p>
-            )}
-          </div>
-        )}
-
-        {execution.runState?.complete && !execution.isRunning && (
-          <div className={styles.completionBanner}>
-            Recipe complete ✓
-          </div>
-        )}
-      </div>
+      <RecipeRunArea
+        isRunning={execution.isRunning}
+        isPaused={execution.isPaused}
+        isComplete={!!execution.runState?.complete}
+        ready={ready}
+        equipmentBlockers={equipmentBlockers}
+        cardTypeBlockers={cardTypeBlockers}
+        onRun={handleRun}
+        onStop={handleStop}
+      />
     </div>
   )
 }

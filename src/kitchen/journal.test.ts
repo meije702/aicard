@@ -64,8 +64,9 @@ Deno.test('getRecentCorrections: respects custom limit', () => {
 })
 
 Deno.test('pruneJournal: keeps at most maxPerCard entries per card type', () => {
+  const now = new Date()
   const journal: JournalEntry[] = Array.from({ length: 150 }, (_, i) =>
-    makeEntry({ timestamp: new Date(2026, 2, 1, 0, 0, i).toISOString() })
+    makeEntry({ timestamp: new Date(now.getTime() - i * 1000).toISOString() })
   )
   const pruned = pruneJournal(journal, 100)
   assertEquals(pruned.length, 100)

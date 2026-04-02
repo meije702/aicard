@@ -1,10 +1,11 @@
 // ProviderConfigPanel — expandable key input area with brand tint.
-// Includes sub-components for API key input (KeyFields) and Ollama-specific fields (OllamaFields).
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import type { SousChefProviderEntry } from '../../types.ts'
 import type { ProviderMeta } from '../../sous-chef/providers.ts'
 import { getProviderLogo } from '../provider-logos.tsx'
+import KeyInput from './KeyInput.tsx'
+import OllamaSetup from './OllamaSetup.tsx'
 import styles from '../SousChefProviders.module.css'
 
 // Detect HTTPS — affects Ollama usability
@@ -109,7 +110,7 @@ export default function ProviderConfigPanel({
       {(editing || !hasSavedKey) && (
         <div onKeyDown={handleKeyDown}>
           {provider.id === 'ollama' ? (
-            <OllamaFields
+            <OllamaSetup
               baseUrl={baseUrl}
               onBaseUrlChange={setBaseUrl}
               model={model}
@@ -117,7 +118,7 @@ export default function ProviderConfigPanel({
               showHttpsWarning={IS_HTTPS}
             />
           ) : (
-            <KeyFields
+            <KeyInput
               provider={provider}
               apiKey={apiKey}
               onApiKeyChange={setApiKey}
@@ -142,197 +143,5 @@ export default function ProviderConfigPanel({
         </div>
       )}
     </div>
-  )
-}
-
-// --- Small helpers for the config panel ---
-
-function KeyFields({
-  provider,
-  apiKey,
-  onApiKeyChange,
-  inputRef,
-}: {
-  provider: ProviderMeta
-  apiKey: string
-  onApiKeyChange: (v: string) => void
-  inputRef: React.RefObject<HTMLInputElement | null>
-}) {
-  return (
-    <>
-      <p className={styles.explanation}>
-        {provider.keyHint.replace(/^Get your key at /, '')}{' '}
-        <a href={provider.keyLink} target="_blank" rel="noopener noreferrer" className={styles.keyLink}>
-          {provider.keyLink.replace('https://', '')}
-        </a>
-      </p>
-      <label className={styles.inputLabel} htmlFor="provider-key">API key</label>
-      <input
-        ref={inputRef as React.RefObject<HTMLInputElement>}
-        id="provider-key"
-        type="password"
-        className={styles.keyInput}
-        placeholder={provider.keyPlaceholder}
-        value={apiKey}
-        onChange={e => onApiKeyChange(e.target.value)}
-        autoFocus
-        autoComplete="off"
-      />
-      <p className={styles.securityNote}>
-        Your key stays in this browser only — it is never sent to our servers.
-      </p>
-    </>
-  )
-}
-
-interface OllamaModel {
-  name: string
-  size: number
-}
-
-function formatSize(bytes: number): string {
-  const gb = bytes / 1e9
-  return gb >= 1 ? `${gb.toFixed(1)} GB` : `${(bytes / 1e6).toFixed(0)} MB`
-}
-
-function OllamaFields({
-  baseUrl,
-  onBaseUrlChange,
-  model,
-  onModelChange,
-  showHttpsWarning,
-}: {
-  baseUrl: string
-  onBaseUrlChange: (v: string) => void
-  model: string
-  onModelChange: (v: string) => void
-  showHttpsWarning: boolean
-}) {
-  const [models, setModels] = useState<OllamaModel[]>([])
-  const [modelsLoading, setModelsLoading] = useState(false)
-  const [modelsError, setModelsError] = useState<string | null>(null)
-
-  // Fetch models when baseUrl changes (debounced slightly)
-  useEffect(() => {
-    const url = baseUrl.trim() || 'http://localhost:11434'
-    let cancelled = false
-    const timer = setTimeout(async () => {
-      setModelsLoading(true)
-      setModelsError(null)
-      try {
-        const res = await fetch(`${url}/api/tags`)
-        if (!res.ok) throw new Error(`${res.status}`)
-        const data = await res.json() as { models: { name: string; size: number }[] }
-        if (cancelled) return
-        const fetched = (data.models ?? []).map(m => ({ name: m.name, size: m.size }))
-        setModels(fetched)
-        // Auto-select the first model if none chosen yet
-        if (!model && fetched.length > 0) {
-          onModelChange(fetched[0].name)
-        }
-      } catch {
-        if (cancelled) return
-        setModels([])
-        setModelsError('Could not reach Ollama')
-      } finally {
-        if (!cancelled) setModelsLoading(false)
-      }
-    }, 400)
-    return () => { cancelled = true; clearTimeout(timer) }
-  }, [baseUrl]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  return (
-    <>
-      {showHttpsWarning && (
-        <div className={styles.httpsWarning}>
-          Ollama only works when you run AICard locally (<code className={styles.code}>deno task dev</code>),
-          not from the hosted version — browsers block requests from HTTPS pages to localhost.
-        </div>
-      )}
-
-      <p className={styles.explanation}>Run a model on your own computer — completely free, no account needed.</p>
-
-      <div className={styles.inputLabel}>Setup</div>
-      <ol className={styles.ollamaSteps}>
-        <li>
-          Download and install Ollama from{' '}
-          <a href="https://ollama.com" target="_blank" rel="noopener noreferrer" className={styles.keyLink}>
-            ollama.com
-          </a>
-        </li>
-        <li>
-          Open a terminal and run: <code className={styles.code}>ollama pull llama3.2</code>
-        </li>
-        <li>
-          Start Ollama if it's not already running: <code className={styles.code}>ollama serve</code>
-        </li>
-      </ol>
-
-      {/* Model picker */}
-      <label className={styles.inputLabel} htmlFor="ollama-model">Model</label>
-      {modelsLoading ? (
-        <div className={styles.modelStatus}>Checking for models...</div>
-      ) : modelsError ? (
-        <div className={styles.modelStatus}>
-          {modelsError} — start Ollama and it will appear here.
-        </div>
-      ) : models.length === 0 ? (
-        <div className={styles.modelStatus}>
-          No models found. Run <code className={styles.code}>ollama pull llama3.2</code> to get started.
-        </div>
-      ) : (
-        <div className={styles.modelGrid}>
-          {models.map(m => (
-            <button
-              key={m.name}
-              type="button"
-              className={`${styles.modelOption} ${model === m.name ? styles.modelSelected : ''}`}
-              onClick={() => onModelChange(m.name)}
-            >
-              <span className={styles.modelName}>{m.name.replace(/:latest$/, '')}</span>
-              <span className={styles.modelSize}>{formatSize(m.size)}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Base URL */}
-      <label className={styles.inputLabel} htmlFor="ollama-url">Ollama address</label>
-      <input
-        id="ollama-url"
-        type="text"
-        className={styles.keyInput}
-        value={baseUrl}
-        onChange={e => onBaseUrlChange(e.target.value)}
-        autoComplete="off"
-      />
-      <p className={styles.securityNote}>
-        Default is <code className={styles.code}>http://localhost:11434</code>. Change only if you run Ollama on a different port.
-      </p>
-
-      <details className={styles.troubleshooting}>
-        <summary className={styles.troubleshootingSummary}>Not working? Common fixes</summary>
-        <ul className={styles.troubleshootingList}>
-          <li>
-            <strong>{"\"Can't reach Ollama\""}</strong> — Make sure Ollama is running.
-            Open a terminal and run <code className={styles.code}>ollama serve</code>.
-          </li>
-          <li>
-            <strong>{"\"Model not found\" (404)"}</strong> — The model needs to be downloaded first.
-            Run <code className={styles.code}>ollama pull llama3.2</code> in your terminal.
-          </li>
-          <li>
-            <strong>CORS error</strong> — Ollama needs permission to talk to your browser.
-            Stop Ollama, then restart it with:{' '}
-            <code className={styles.code}>OLLAMA_ORIGINS=* ollama serve</code>
-          </li>
-          <li>
-            <strong>Still stuck?</strong> Check that <code className={styles.code}>ollama list</code> shows
-            at least one model, and that you can
-            reach <code className={styles.code}>http://localhost:11434</code> in your browser.
-          </li>
-        </ul>
-      </details>
-    </>
   )
 }
