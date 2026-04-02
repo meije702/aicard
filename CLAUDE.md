@@ -11,9 +11,9 @@
 
 See AGENTS.md for the full scope definition. The short version:
 
-- **Level 1** (Following) and **Level 2** (Tweaking) only
+- **Level 1** (Following), **Level 2** (Tweaking), and **Level 3** (Combining)
 - Three card types: Listen, Wait, Send Message
-- No backend, no auth, no Level 3+
+- No backend, no auth, no Level 4+
 
 When tempted to build more, ask: **"Does Level 1 work yet?"**
 

@@ -1,12 +1,49 @@
-// Tests for the recipe runner's Level 2 behaviour: getStepConfig overrides.
-//
-// These tests focus on the runner's ability to pick up config tweaked by the
-// user after a run starts. The runner should use liveConfig when provided and
-// fall back to the recipe's original config when getStepConfig returns null.
+// Tests for the recipe runner: Level 2 config overrides, cancellation,
+// error handling, step references, sub-recipe delegation, and interactions.
 
-import { assertEquals } from 'jsr:@std/assert'
+import { assertEquals, assertStringIncludes } from 'jsr:@std/assert'
 import { runRecipe } from './recipe-runner.ts'
 import type { Recipe, Kitchen } from '../types.ts'
+import type { CardExecutor } from '../cards/card-executor.ts'
+import type { ExecutorRegistry } from './run-types.ts'
+
+// --- Stub executors (instant, no real delays) ---
+
+const instantWaitExecutor: CardExecutor = {
+  type: 'wait',
+  checkEquipment: () => ({ ready: true, missing: [] }),
+  execute: async () => ({ success: true, output: {}, message: 'waited' }),
+  describe: (config) => `Waiting ${config['how long'] ?? '...'}`,
+}
+
+function createStubExecutor(overrides: Partial<CardExecutor> = {}): CardExecutor {
+  return {
+    type: 'listen',
+    checkEquipment: () => ({ ready: true, missing: [] }),
+    execute: async () => ({ success: true, output: { data: 'value' }, message: 'done' }),
+    describe: (config) => `Stub: ${Object.values(config).join(', ')}`,
+    ...overrides,
+  }
+}
+
+const stubExecutors: ExecutorRegistry = {
+  listen: createStubExecutor(),
+  wait: instantWaitExecutor,
+  'send-message': createStubExecutor({ type: 'send-message' }),
+}
+
+// --- Helpers ---
+
+function makeRecipe(overrides: Partial<Recipe> = {}): Recipe {
+  return {
+    name: 'Test Recipe',
+    purpose: '',
+    kitchen: [],
+    steps: [],
+    errors: [],
+    ...overrides,
+  }
+}
 
 // A minimal recipe with a single Wait step using a long duration
 const waitRecipe: Recipe = {
@@ -124,4 +161,192 @@ Deno.test('runRecipe: tweaked description is reflected in step state', async () 
   // The description should eventually reflect "1 second", not "999 days"
   const finalDescription = stateDescriptions[stateDescriptions.length - 1] ?? ''
   assertEquals(finalDescription.includes('1 second'), true)
+})
+
+// --- Cancellation ---
+
+Deno.test('runRecipe: isCancelled stops the run before a step', async () => {
+  const recipe = makeRecipe({
+    steps: [
+      { number: 1, name: 'Step 1', card: 'wait', config: { 'how long': '1 second' } },
+    ],
+  })
+  const finalState = await runRecipe(
+    recipe, emptyKitchen, undefined, undefined, undefined,
+    stubExecutors,
+    () => true, // cancelled immediately
+  )
+  assertEquals(finalState.cancelled, true)
+  assertEquals(finalState.complete, false)
+  assertEquals(finalState.steps[0].status, 'pending')
+})
+
+Deno.test('runRecipe: isCancelled after onStepReview stops the run', async () => {
+  const recipe = makeRecipe({
+    steps: [
+      { number: 1, name: 'Step 1', card: 'wait', config: { 'how long': '1 second' } },
+    ],
+  })
+  let cancelAfterReview = false
+  const finalState = await runRecipe(
+    recipe, emptyKitchen, undefined, undefined, undefined,
+    stubExecutors,
+    () => cancelAfterReview,
+    async () => { cancelAfterReview = true }, // review triggers cancel
+  )
+  assertEquals(finalState.cancelled, true)
+  assertEquals(finalState.complete, false)
+})
+
+// --- Unknown card type ---
+
+Deno.test('runRecipe: unknown card type fails step but continues to next', async () => {
+  const recipe = makeRecipe({
+    steps: [
+      { number: 1, name: 'Bad step', card: 'transform' as never, config: {} },
+      { number: 2, name: 'Good step', card: 'wait', config: { 'how long': '1 second' } },
+    ],
+  })
+  const finalState = await runRecipe(
+    recipe, emptyKitchen, undefined, undefined, undefined, stubExecutors,
+  )
+  assertEquals(finalState.steps[0].status, 'failed')
+  assertEquals(finalState.steps[1].status, 'complete')
+  assertEquals(finalState.errors.length >= 1, true)
+  assertStringIncludes(finalState.errors[0], 'Unknown card type')
+})
+
+// --- Executor exception ---
+
+Deno.test('runRecipe: executor exception is caught and step marked failed', async () => {
+  const throwingExecutor = createStubExecutor({
+    execute: async () => { throw new Error('kaboom') },
+  })
+  const recipe = makeRecipe({
+    steps: [{ number: 1, name: 'Boom', card: 'listen', config: {} }],
+  })
+  const executors: ExecutorRegistry = { ...stubExecutors, listen: throwingExecutor }
+  const finalState = await runRecipe(
+    recipe, emptyKitchen, undefined, undefined, undefined, executors,
+  )
+  assertEquals(finalState.steps[0].status, 'failed')
+  assertStringIncludes(finalState.errors[0], 'kaboom')
+})
+
+// --- Step references ---
+
+Deno.test('runRecipe: context flows between steps via step references', async () => {
+  const listenExec = createStubExecutor({
+    execute: async () => ({ success: true, output: { email: 'a@b.com' }, message: 'got it' }),
+  })
+  const sendExec = createStubExecutor({
+    type: 'send-message',
+    execute: async (config) => ({
+      success: true,
+      output: { to: config['to'] ?? '' },
+      message: 'sent',
+    }),
+  })
+  const recipe = makeRecipe({
+    steps: [
+      { number: 1, name: 'Listen', card: 'listen', config: { 'listen for': 'new order' } },
+      { number: 2, name: 'Send', card: 'send-message', config: { to: '{step 1: email}' } },
+    ],
+  })
+  const executors: ExecutorRegistry = { ...stubExecutors, listen: listenExec, 'send-message': sendExec }
+  const finalState = await runRecipe(
+    recipe, emptyKitchen, undefined, undefined, undefined, executors,
+  )
+  assertEquals(finalState.complete, true)
+  assertEquals(finalState.context['step 2']?.to, 'a@b.com')
+})
+
+// --- onStateChange ---
+
+Deno.test('runRecipe: onStateChange called at each transition', async () => {
+  let callCount = 0
+  const recipe = makeRecipe({
+    steps: [
+      { number: 1, name: 'Step 1', card: 'wait', config: { 'how long': '1 second' } },
+    ],
+  })
+  await runRecipe(
+    recipe, emptyKitchen,
+    () => { callCount++ },
+    undefined, undefined, stubExecutors,
+  )
+  // Initial + running + description update + complete + final = at least 4 calls
+  assertEquals(callCount >= 4, true)
+})
+
+// --- Sub-recipe steps ---
+
+Deno.test('runRecipe: sub-recipe step without onSubRecipe is skipped', async () => {
+  const recipe = makeRecipe({
+    steps: [{ number: 1, name: 'Call inner', recipe: 'Inner' }],
+  })
+  const finalState = await runRecipe(
+    recipe, emptyKitchen, undefined, undefined, undefined, stubExecutors,
+  )
+  assertEquals(finalState.steps[0].status, 'skipped')
+  assertEquals(finalState.complete, true)
+})
+
+Deno.test('runRecipe: sub-recipe step with onSubRecipe success flows to context', async () => {
+  const recipe = makeRecipe({
+    steps: [{ number: 1, name: 'Call inner', recipe: 'Inner' }],
+  })
+  const finalState = await runRecipe(
+    recipe, emptyKitchen, undefined, undefined, undefined, stubExecutors,
+    undefined, undefined,
+    async () => ({ success: true, output: { result: 'done' }, message: 'ok' }),
+  )
+  assertEquals(finalState.steps[0].status, 'complete')
+  assertEquals(finalState.context['step 1']?.result, 'done')
+  assertEquals(finalState.complete, true)
+})
+
+Deno.test('runRecipe: sub-recipe failure stops the run', async () => {
+  const recipe = makeRecipe({
+    steps: [
+      { number: 1, name: 'Call inner', recipe: 'Inner' },
+      { number: 2, name: 'After', card: 'wait', config: { 'how long': '1 second' } },
+    ],
+  })
+  const finalState = await runRecipe(
+    recipe, emptyKitchen, undefined, undefined, undefined, stubExecutors,
+    undefined, undefined,
+    async () => ({ success: false, output: {}, message: 'inner failed' }),
+  )
+  assertEquals(finalState.steps[0].status, 'failed')
+  assertEquals(finalState.steps[1].status, 'pending')
+  assertEquals(finalState.complete, false)
+})
+
+// --- onStepInteraction ---
+
+Deno.test('runRecipe: onStepInteraction bridges interaction to executor', async () => {
+  const interactiveExecutor = createStubExecutor({
+    execute: async (_config, _ctx, _kitchen, onInteraction) => {
+      if (onInteraction) {
+        const response = await onInteraction({
+          prompt: 'Enter email',
+          fields: [{ key: 'email', label: 'Email' }],
+        })
+        return { success: true, output: response, message: 'got input' }
+      }
+      return { success: true, output: {}, message: 'no interaction' }
+    },
+  })
+  const recipe = makeRecipe({
+    steps: [{ number: 1, name: 'Interactive', card: 'listen', config: {} }],
+  })
+  const executors: ExecutorRegistry = { ...stubExecutors, listen: interactiveExecutor }
+  const finalState = await runRecipe(
+    recipe, emptyKitchen, undefined,
+    async (_stepIndex, _interaction) => ({ email: 'user@test.com' }),
+    undefined, executors,
+  )
+  assertEquals(finalState.complete, true)
+  assertEquals(finalState.context['step 1']?.email, 'user@test.com')
 })
