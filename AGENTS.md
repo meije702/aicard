@@ -102,7 +102,7 @@ Expanding the pantry beyond Listen, Wait, Send Message. Candidates: Filter, Tran
 - **Frontend**: React + TypeScript, bundled by Vite, runs entirely in the browser
 - **Distribution**: `deno compile` produces a single `./aicard` binary that serves the bundled app
 - **Recipe/card parsing**: deterministic parser that reads Markdown formats defined in docs
-- **Sous chef**: calls any of 5 providers via `createSousChef(config)` — Anthropic (`claude-sonnet-4-6` default), OpenAI, Gemini, Mistral, or Ollama (local, no key required)
+- **Sous chef**: calls any of 5 providers via `createSousChef(config)` — Anthropic, OpenAI, Gemini, Mistral, or Ollama (local, no key required). Each provider has a sensible default model; the user picks which provider and model to use
 - **Card execution**: each card type has an executor; v1 ships with: Listen, Wait, Send Message
 - **Storage**: browser localStorage for kitchen state; file system access via `<input type="file">`
 - **No backend required for v1** — except the Anthropic API for the sous chef
@@ -114,47 +114,100 @@ Expanding the pantry beyond Listen, Wait, Send Message. Candidates: Filter, Tran
 ```text
 aicard/
   docs/                          ← project documents (read-only reference)
+    adr/                         ← architecture decision records (001–005)
   src/
-    parser/                      ← recipe and card file parsers
+    parser/                      ← recipe, card, and equipment file parsers
       recipe-parser.ts
+      parse-steps.ts             ← step parsing (extracted from recipe-parser)
       card-parser.ts
-      recipe-parser.test.ts
-      card-parser.test.ts
+      equipment-parser.ts
+      card-type.ts               ← card type normalisation
+      section-helpers.ts         ← markdown section extraction
+      wizard-response-parser.ts  ← sous chef wizard JSON parsing
     cards/                       ← card type executors
       listen.ts
       wait.ts
       send-message.ts
       card-executor.ts           ← shared executor interface
-      resolve-value.ts           ← config value resolution helper
-    kitchen/                     ← kitchen state and equipment
+      resolve-value.ts           ← config value and step-reference resolution
+    kitchen/                     ← kitchen state, equipment, and journal
       kitchen-state.ts
       equipment.ts
+      journal.ts                 ← append-only kitchen journal with pruning
     runner/                      ← wires everything together
       recipe-runner.ts           ← execution loop; accepts injected ExecutorRegistry
+      run-types.ts               ← shared runner types (extracted from recipe-runner)
       recipe-readiness.ts        ← pre-flight checks (SRP: separate from runner)
       run-state-repository.ts    ← persistence abstraction for run state
+      sub-recipe-runner.ts       ← Level 3 sub-recipe execution factory
     sous-chef/                   ← the AI collaborator
       sous-chef.ts               ← createSousChef: readiness, describe, hat options, ask
       client.ts                  ← sousChefAsk: Anthropic SDK + OpenAI-compatible fetch
       providers.ts               ← provider metadata (Anthropic, OpenAI, Gemini, Mistral, Ollama)
       prompts.ts                 ← system prompts and context builders
+      prompt-context.ts          ← technique, house style, journal injection
+      equipment-prompts.ts       ← equipment wizard prompt generation
+      tour-prompts.ts            ← recipe tour stop generation
+    liteparse/                   ← photo-to-recipe transcription (experimental)
+      liteparse.ts
+      liteparse-prompt.ts
     ui/                          ← React components
-      App.tsx
-      Kitchen.tsx
-      RecipeView.tsx
-      CardConfig.tsx
-      SousChef.tsx               ← hat button, toasts, ask panel
-      SousChefProviders.tsx      ← provider selection and API key config
+      App.tsx                    ← router and provider setup
+      Kitchen.tsx                ← main application shell
+      RecipeView.tsx             ← recipe reading/running interface
+      CardConfig.tsx             ← live config tweaking panel
+      SousChef.tsx               ← hat button and sous chef orchestration
       StepInteraction.tsx        ← user-input form rendered during a running step
-      EquipmentConnect.tsx       ← equipment API key connection dialog
+      StepItem.tsx               ← individual step with status indicators
+      EquipmentPanel.tsx         ← equipment readiness and connection UI
+      MarkdownText.tsx           ← markdown renderer for sous chef responses
       sous-chef-storage.ts       ← SousChef setup persistence (localStorage)
       provider-logos.tsx         ← SVG logos for each provider
+      equipment-icon.ts          ← equipment icon mapping
+      markdown-blocks.ts         ← markdown block parser
+      kitchen/                   ← kitchen sub-components
+        HouseStyleForm.tsx
+        RecipesList.tsx
+      providers/                 ← sous chef provider config
+        SousChefProviders.tsx    ← provider selection and API key config
+        ProviderConfigPanel.tsx  ← expandable key input with brand tinting
+        KeyInput.tsx             ← API key input with doc link
+        OllamaSetup.tsx          ← Ollama model picker and troubleshooting
+      recipe/                    ← recipe view sub-components
+        RecipeRunArea.tsx        ← run/stop buttons, readiness hints
+        RecipeWarningBanners.tsx ← wait-step and paused-recipe warnings
+      sous-chef/                 ← sous chef UI sub-components
+        HatPanel.tsx             ← options menu, ask input, answer display
+        ToastContainer.tsx       ← toast notification rendering
+      tour/                      ← interactive recipe tour
+        RecipeTour.tsx
+        TourOverlay.tsx
+        TourPopover.tsx
+        use-tour-position.ts
+      wizard/                    ← equipment setup wizard
+        EquipmentWizard.tsx
+        WizardStepRenderer.tsx
+        WizardTextField.tsx
+        WizardPasswordField.tsx
+        WizardSelectField.tsx
+        WizardInfoField.tsx
+        WizardConfirmField.tsx
+        field-catalog.ts
+      hooks/                     ← custom React hooks
+        use-equipment-wizard.ts
+        use-hat-menu.ts
+        use-recipe-execution.ts
+        use-recipe-interaction.ts
+        use-recipe-review.ts
+        use-theme.ts
+        use-toast-manager.ts
     test/                        ← test infrastructure
-      bdd/                       ← custom BDD runner
-    features/                    ← BDD step definitions
-    fixtures/                    ← example recipes and card definitions
+      bdd/                       ← custom BDD runner (ADR-004)
+      helpers/                   ← fixture loader and recipe builder
+    features/                    ← BDD step definitions (.feature + .steps.test.ts)
+    fixtures/                    ← example recipes, cards, and equipment definitions
       pantry/                    ← card type definitions (.card.md)
-      recipes/                   ← recipe files (.recipe.md)
+      equipment/                 ← equipment definitions (.equipment.md)
     types.ts                     ← shared domain types
     main.tsx                     ← React app entry point
     server.ts                    ← Deno HTTP server (binary target)

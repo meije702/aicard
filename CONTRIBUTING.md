@@ -94,6 +94,7 @@ Use the project vocabulary in all code, comments, UI strings, and variable names
 |----------|----------|
 | recipe | workflow, pipeline, automation |
 | card | node, action, step (when you mean the type) |
+| step | task, item (when you mean a position in a recipe) |
 | kitchen | workspace, environment, project |
 | equipment | integration, connector, service |
 | pantry | library, marketplace, registry |

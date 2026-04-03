@@ -4,7 +4,7 @@
 
 ## Claude-specific configuration
 
-- **Sous chef model**: `claude-sonnet-4-6` — this is the model the sous chef calls via the Anthropic API. Do not change this without discussion.
+- **Sous chef model**: each provider has a sensible default (see `src/sous-chef/providers.ts`). The user picks which provider and model to use.
 - **If unsure about a term**, check `docs/AICard_Domain_Language.md` before inventing one.
 
 ## What we are building (v1 scope)
