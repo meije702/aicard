@@ -1,4 +1,4 @@
-import { assertEquals, assertExists, assertGreater } from 'jsr:@std/assert'
+import { assertEquals, assertExists, assertGreater } from '@std/assert'
 import { parseEquipmentDefinition } from './equipment-parser.ts'
 import type { EquipmentDefinition } from '../types.ts'
 

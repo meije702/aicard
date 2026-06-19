@@ -1,4 +1,4 @@
-import { assertEquals } from 'jsr:@std/assert'
+import { assertEquals } from '@std/assert'
 import { parseDurationToMs } from './wait.ts'
 import { waitExecutor } from './wait.ts'
 import type { Kitchen, RecipeContext } from '../types.ts'

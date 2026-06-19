@@ -1,6 +1,6 @@
 // Tests for sub-recipe-runner: Level 3 (Combining) sub-recipe execution.
 
-import { assertEquals, assertStringIncludes } from 'jsr:@std/assert'
+import { assertEquals, assertStringIncludes } from '@std/assert'
 import { createSubRecipeRunner } from './sub-recipe-runner.ts'
 import type { Recipe, Kitchen } from '../types.ts'
 import type { CardExecutor } from '../cards/card-executor.ts'

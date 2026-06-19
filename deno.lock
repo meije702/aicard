@@ -2,6 +2,7 @@
   "version": "5",
   "specifiers": {
     "jsr:@std/assert@*": "1.0.19",
+    "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "npm:@anthropic-ai/sdk@0.39": "0.39.0",
     "npm:@cucumber/gherkin@29": "29.0.0",
@@ -908,10 +909,12 @@
     },
     "uuid@10.0.0": {
       "integrity": "sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==",
+      "deprecated": true,
       "bin": true
     },
     "uuid@9.0.1": {
       "integrity": "sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==",
+      "deprecated": true,
       "bin": true
     },
     "vite@5.4.21": {
@@ -945,6 +948,7 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@std/assert@1",
       "npm:@anthropic-ai/sdk@0.39",
       "npm:@cucumber/gherkin@29",
       "npm:@cucumber/messages@26",

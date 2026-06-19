@@ -1,6 +1,6 @@
 // BDD step definitions for equipment-setup.feature
 
-import { assertEquals, assertExists } from 'jsr:@std/assert'
+import { assertEquals, assertExists } from '@std/assert'
 import { Given, When, Then } from '../test/bdd/step-registry.ts'
 import { runFeature } from '../test/bdd/runner.ts'
 import { loadFixture } from '../test/helpers/fixture-loader.ts'

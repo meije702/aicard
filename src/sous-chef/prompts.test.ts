@@ -1,4 +1,4 @@
-import { assertEquals } from 'jsr:@std/assert'
+import { assertEquals } from '@std/assert'
 import { renderCardPrompt } from './prompts.ts'
 import type { PromptContext, JournalEntry } from '../types.ts'
 

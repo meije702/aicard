@@ -4,7 +4,7 @@ import { Given, When, Then } from '../test/bdd/step-registry.ts'
 import { runFeature } from '../test/bdd/runner.ts'
 import { parseRecipe } from '../parser/recipe-parser.ts'
 import { loadFixture } from '../test/helpers/fixture-loader.ts'
-import { assertEquals, assertExists, assertGreater } from 'jsr:@std/assert'
+import { assertEquals, assertExists, assertGreater } from '@std/assert'
 import type { World } from '../test/bdd/world.ts'
 import type { CardStep } from '../types.ts'
 

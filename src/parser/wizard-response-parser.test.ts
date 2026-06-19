@@ -1,4 +1,4 @@
-import { assertEquals } from 'jsr:@std/assert'
+import { assertEquals } from '@std/assert'
 import { parseWizardStepResponse } from './wizard-response-parser.ts'
 
 Deno.test('parseWizardStepResponse: parses valid JSON', () => {

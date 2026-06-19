@@ -1,4 +1,4 @@
-import { assertEquals } from 'jsr:@std/assert'
+import { assertEquals } from '@std/assert'
 import { buildEquipmentStepPrompt, buildFallbackStepResponse } from './equipment-prompts.ts'
 import type { EquipmentDefinition } from '../types.ts'
 

@@ -2,7 +2,7 @@
 // Covers both manual confirmation mode (with onInteraction) and
 // headless/test fallback mode (without onInteraction).
 
-import { assertEquals, assertExists } from 'jsr:@std/assert'
+import { assertEquals, assertExists } from '@std/assert'
 import { listenExecutor } from './listen.ts'
 import type { Kitchen, RecipeContext } from '../types.ts'
 

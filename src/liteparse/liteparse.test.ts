@@ -2,7 +2,7 @@
 // These mock the sous-chef client to test the transcription → parse round-trip
 // without making real API calls.
 
-import { assertEquals } from "jsr:@std/assert"
+import { assertEquals } from '@std/assert'
 import { parseRecipe } from '../parser/recipe-parser.ts'
 import { LITEPARSE_SYSTEM_PROMPT } from './liteparse-prompt.ts'
 

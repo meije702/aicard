@@ -1,4 +1,4 @@
-import { assertEquals } from "jsr:@std/assert"
+import { assertEquals } from '@std/assert'
 import { resolveValue, resolveAllValues } from './resolve-value.ts'
 import type { RecipeContext } from '../types.ts'
 

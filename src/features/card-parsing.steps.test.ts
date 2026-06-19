@@ -4,7 +4,7 @@ import { Given, When, Then } from '../test/bdd/step-registry.ts'
 import { runFeature } from '../test/bdd/runner.ts'
 import { parseCard } from '../parser/card-parser.ts'
 import { loadFixture } from '../test/helpers/fixture-loader.ts'
-import { assertEquals, assertExists, assertGreater } from 'jsr:@std/assert'
+import { assertEquals, assertExists, assertGreater } from '@std/assert'
 import type { World } from '../test/bdd/world.ts'
 
 Given('a card file {string}', async (world: World, filename: string) => {
