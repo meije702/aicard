@@ -1,0 +1,12 @@
+// markdownlint overrides for Architecture Decision Records.
+// ADRs follow a fixed template (## Status / ## Context / ## Decision / ...)
+// where each heading sits directly above its content, and are immutable once
+// accepted (see docs/Seven_Principles_of_Engineering_Thinking.md). Relax the
+// prose-spacing rules so the template style doesn't fail lint.
+{
+  "extends": "../../.markdownlint.jsonc",
+
+  // MD022/MD032 — blanks around headings/lists, omitted by the ADR template.
+  "MD022": false,
+  "MD032": false
+}

@@ -1,0 +1,15 @@
+// markdownlint overrides for equipment definition files (*.equipment.md).
+// Equipment files are compact DSL data, not prose: headings sit directly above
+// their content, config lists follow declarations without surrounding blanks,
+// and "Documentation" values are plain URLs. Relax the prose rules that
+// conflict with that format.
+{
+  "extends": "../../../.markdownlint.jsonc",
+
+  // MD022/MD032 — blanks around headings/lists, omitted by the compact format.
+  "MD022": false,
+  "MD032": false,
+
+  // MD034 — bare URLs. Equipment documentation values are plain URLs.
+  "MD034": false
+}
