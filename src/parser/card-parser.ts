@@ -6,7 +6,8 @@ import { extractSection, extractSubsections } from './section-helpers.ts'
 import { KNOWN_CARD_TYPES, normaliseCardType } from './card-type.ts'
 
 export function parseCard(markdown: string): ParsedCard {
-  const lines = markdown.split('\n')
+  // Split on \r?\n so Windows (CRLF) files parse identically to Unix (LF).
+  const lines = markdown.split(/\r?\n/)
   const errors: string[] = []
 
   const name = parseName(lines)

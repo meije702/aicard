@@ -22,6 +22,18 @@ function expectSuccess(markdown: string): CardDefinition {
 }
 
 // ---------------------------------------------------------------------------
+// line-ending normalisation
+// ---------------------------------------------------------------------------
+
+Deno.test("parseCard: parses CRLF (Windows) files identically to LF", () => {
+  const lf = expectSuccess(listenFixture)
+  const crlf = expectSuccess(listenFixture.replace(/\n/g, '\r\n'))
+  assertEquals(crlf.name, lf.name)
+  assertEquals(crlf.type, lf.type)
+  assertEquals(crlf.purpose, lf.purpose)
+})
+
+// ---------------------------------------------------------------------------
 // listen fixture
 // ---------------------------------------------------------------------------
 
