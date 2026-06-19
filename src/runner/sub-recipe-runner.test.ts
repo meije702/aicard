@@ -10,21 +10,21 @@ import type { ExecutorRegistry } from './run-types.ts'
 const instantWaitExecutor: CardExecutor = {
     type: 'wait',
     checkEquipment: () => ({ ready: true, missing: [] }),
-    execute: async () => ({ success: true, output: {}, message: 'waited' }),
+    execute: () => Promise.resolve({ success: true, output: {}, message: 'waited' }),
     describe: (config) => `Waiting ${config['how long'] ?? '...'}`,
 }
 
 const stubListenExecutor: CardExecutor = {
     type: 'listen',
     checkEquipment: () => ({ ready: true, missing: [] }),
-    execute: async () => ({ success: true, output: { event: 'received' }, message: 'listened' }),
+    execute: () => Promise.resolve({ success: true, output: { event: 'received' }, message: 'listened' }),
     describe: () => 'Listening...',
 }
 
 const failingExecutor: CardExecutor = {
     type: 'listen',
     checkEquipment: () => ({ ready: true, missing: [] }),
-    execute: async () => ({ success: false, output: {}, message: 'executor failed' }),
+    execute: () => Promise.resolve({ success: false, output: {}, message: 'executor failed' }),
     describe: () => 'Will fail',
 }
 

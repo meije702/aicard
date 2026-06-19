@@ -12,7 +12,7 @@ import type { ExecutorRegistry } from './run-types.ts'
 const instantWaitExecutor: CardExecutor = {
   type: 'wait',
   checkEquipment: () => ({ ready: true, missing: [] }),
-  execute: async () => ({ success: true, output: {}, message: 'waited' }),
+  execute: () => Promise.resolve({ success: true, output: {}, message: 'waited' }),
   describe: (config) => `Waiting ${config['how long'] ?? '...'}`,
 }
 
@@ -20,7 +20,7 @@ function createStubExecutor(overrides: Partial<CardExecutor> = {}): CardExecutor
   return {
     type: 'listen',
     checkEquipment: () => ({ ready: true, missing: [] }),
-    execute: async () => ({ success: true, output: { data: 'value' }, message: 'done' }),
+    execute: () => Promise.resolve({ success: true, output: { data: 'value' }, message: 'done' }),
     describe: (config) => `Stub: ${Object.values(config).join(', ')}`,
     ...overrides,
   }
@@ -192,7 +192,7 @@ Deno.test('runRecipe: isCancelled after onStepReview stops the run', async () =>
     recipe, emptyKitchen, undefined, undefined, undefined,
     stubExecutors,
     () => cancelAfterReview,
-    async () => { cancelAfterReview = true }, // review triggers cancel
+    () => { cancelAfterReview = true; return Promise.resolve() }, // review triggers cancel
   )
   assertEquals(finalState.cancelled, true)
   assertEquals(finalState.complete, false)
@@ -220,7 +220,7 @@ Deno.test('runRecipe: unknown card type fails step but continues to next', async
 
 Deno.test('runRecipe: executor exception is caught and step marked failed', async () => {
   const throwingExecutor = createStubExecutor({
-    execute: async () => { throw new Error('kaboom') },
+    execute: () => Promise.reject(new Error('kaboom')),
   })
   const recipe = makeRecipe({
     steps: [{ number: 1, name: 'Boom', card: 'listen', config: {} }],
@@ -237,11 +237,11 @@ Deno.test('runRecipe: executor exception is caught and step marked failed', asyn
 
 Deno.test('runRecipe: context flows between steps via step references', async () => {
   const listenExec = createStubExecutor({
-    execute: async () => ({ success: true, output: { email: 'a@b.com' }, message: 'got it' }),
+    execute: () => Promise.resolve({ success: true, output: { email: 'a@b.com' }, message: 'got it' }),
   })
   const sendExec = createStubExecutor({
     type: 'send-message',
-    execute: async (config) => ({
+    execute: (config) => Promise.resolve({
       success: true,
       output: { to: config['to'] ?? '' },
       message: 'sent',
@@ -299,7 +299,7 @@ Deno.test('runRecipe: sub-recipe step with onSubRecipe success flows to context'
   const finalState = await runRecipe(
     recipe, emptyKitchen, undefined, undefined, undefined, stubExecutors,
     undefined, undefined,
-    async () => ({ success: true, output: { result: 'done' }, message: 'ok' }),
+    () => Promise.resolve({ success: true, output: { result: 'done' }, message: 'ok' }),
   )
   assertEquals(finalState.steps[0].status, 'complete')
   assertEquals(finalState.context['step 1']?.result, 'done')
@@ -316,7 +316,7 @@ Deno.test('runRecipe: sub-recipe failure stops the run', async () => {
   const finalState = await runRecipe(
     recipe, emptyKitchen, undefined, undefined, undefined, stubExecutors,
     undefined, undefined,
-    async () => ({ success: false, output: {}, message: 'inner failed' }),
+    () => Promise.resolve({ success: false, output: {}, message: 'inner failed' }),
   )
   assertEquals(finalState.steps[0].status, 'failed')
   assertEquals(finalState.steps[1].status, 'pending')
@@ -344,7 +344,7 @@ Deno.test('runRecipe: onStepInteraction bridges interaction to executor', async 
   const executors: ExecutorRegistry = { ...stubExecutors, listen: interactiveExecutor }
   const finalState = await runRecipe(
     recipe, emptyKitchen, undefined,
-    async (_stepIndex, _interaction) => ({ email: 'user@test.com' }),
+    (_stepIndex, _interaction) => Promise.resolve({ email: 'user@test.com' }),
     undefined, executors,
   )
   assertEquals(finalState.complete, true)

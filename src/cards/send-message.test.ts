@@ -70,9 +70,9 @@ Deno.test('sendMessageExecutor: with onInteraction, shows composed message for r
   try {
     const result = await sendMessageExecutor.execute(
       config, emptyContext, connectedKitchen,
-      async (interaction) => {
+      (interaction) => {
         receivedFields = interaction.fields.map(f => f.key)
-        return {}
+        return Promise.resolve({})
       }
     )
 

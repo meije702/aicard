@@ -26,7 +26,7 @@ export async function sousChefAsk(
   const model = config.model ?? provider.defaultModel
 
   if (config.provider === 'anthropic') {
-    return anthropicAsk(config.apiKey, model, systemPrompt, userMessage, image)
+    return await anthropicAsk(config.apiKey, model, systemPrompt, userMessage, image)
   }
 
   if (image) {
@@ -34,7 +34,7 @@ export async function sousChefAsk(
   }
 
   const baseUrl = config.baseUrl ?? provider.apiBaseUrl
-  return openAiCompatibleAsk(baseUrl, config.apiKey, model, systemPrompt, userMessage)
+  return await openAiCompatibleAsk(baseUrl, config.apiKey, model, systemPrompt, userMessage)
 }
 
 // --- Anthropic (uses SDK for correct auth headers and error types) ---

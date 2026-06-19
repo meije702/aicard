@@ -19,11 +19,11 @@ const emptyContext: RecipeContext = {}
 Deno.test('listenExecutor: with onInteraction, calls confirm and returns user data', async () => {
   const config = { 'listen for': 'new order', 'from': 'Shopify' }
 
-  const result = await listenExecutor.execute(config, emptyContext, connectedKitchen, async (interaction) => {
+  const result = await listenExecutor.execute(config, emptyContext, connectedKitchen, (interaction) => {
     // Verify the interaction has the right fields for a "new order" event
     assertExists(interaction.fields.find(f => f.key === 'customer email'))
     assertExists(interaction.fields.find(f => f.key === 'order number'))
-    return { 'customer email': 'maria@shop.com', 'order number': '#1042' }
+    return Promise.resolve({ 'customer email': 'maria@shop.com', 'order number': '#1042' })
   })
 
   assertEquals(result.success, true)
@@ -86,9 +86,9 @@ Deno.test('listenExecutor: interaction fields vary by event type', async () => {
   const config = { 'listen for': 'new subscriber', 'from': 'Shopify' }
   let fieldKeys: string[] = []
 
-  await listenExecutor.execute(config, emptyContext, connectedKitchen, async (interaction) => {
+  await listenExecutor.execute(config, emptyContext, connectedKitchen, (interaction) => {
     fieldKeys = interaction.fields.map(f => f.key)
-    return { 'subscriber email': 'test@example.com', 'subscriber name': 'Test' }
+    return Promise.resolve({ 'subscriber email': 'test@example.com', 'subscriber name': 'Test' })
   })
 
   assertEquals(fieldKeys.includes('subscriber email'), true)

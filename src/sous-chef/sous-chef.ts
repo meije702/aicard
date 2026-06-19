@@ -239,5 +239,5 @@ Respond with ONLY a JSON object in this exact format, no other text:
 
 // Internal helper: make a single request via the selected provider.
 async function ask(config: SousChefConfig, userMessage: string): Promise<string> {
-  return sousChefAsk(config, SOUS_CHEF_SYSTEM_PROMPT, userMessage)
+  return await sousChefAsk(config, SOUS_CHEF_SYSTEM_PROMPT, userMessage)
 }
