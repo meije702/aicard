@@ -2,7 +2,7 @@
 // Covers mailto: URL construction, compose-and-hand-off mode,
 // and headless fallback.
 
-import { assertEquals } from 'jsr:@std/assert'
+import { assertEquals } from '@std/assert'
 import { sendMessageExecutor, buildMailtoUrl } from './send-message.ts'
 import type { Kitchen, RecipeContext } from '../types.ts'
 

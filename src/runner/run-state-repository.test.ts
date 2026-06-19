@@ -1,6 +1,6 @@
 // Tests for run-state-repository: localStorage persistence for recipe run state.
 
-import { assertEquals } from 'jsr:@std/assert'
+import { assertEquals } from '@std/assert'
 import { localStorageRunStateRepository } from './run-state-repository.ts'
 import type { RunState } from './run-types.ts'
 

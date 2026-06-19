@@ -1,4 +1,4 @@
-import { assertEquals } from 'jsr:@std/assert'
+import { assertEquals } from '@std/assert'
 import { normaliseCardType } from './card-type.ts'
 
 Deno.test('normaliseCardType: Send Message → send-message', () => {

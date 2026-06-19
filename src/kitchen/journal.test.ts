@@ -1,4 +1,4 @@
-import { assertEquals } from 'jsr:@std/assert'
+import { assertEquals } from '@std/assert'
 import { appendJournalEntry, getRecentCorrections, pruneJournal } from './journal.ts'
 import type { Kitchen, JournalEntry } from '../types.ts'
 

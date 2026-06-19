@@ -1,4 +1,4 @@
-import { assertEquals, assertGreater } from "jsr:@std/assert"
+import { assertEquals, assertGreater } from '@std/assert'
 import { parseCard } from './card-parser.ts'
 import type { CardDefinition } from '../types.ts'
 

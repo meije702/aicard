@@ -1,4 +1,4 @@
-import { assertEquals, assertExists } from 'jsr:@std/assert'
+import { assertEquals, assertExists } from '@std/assert'
 import { buildPromptContext } from './prompt-context.ts'
 import type { Kitchen, Technique } from '../types.ts'
 

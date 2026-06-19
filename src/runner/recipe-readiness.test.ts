@@ -1,6 +1,6 @@
 // Tests for recipe-readiness: pre-flight checks before recipe execution.
 
-import { assertEquals } from 'jsr:@std/assert'
+import { assertEquals } from '@std/assert'
 import { checkRecipeReadiness, recipeHasWaitSteps } from './recipe-readiness.ts'
 import type { Recipe, Kitchen, Equipment } from '../types.ts'
 import type { CardExecutor } from '../cards/card-executor.ts'

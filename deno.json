@@ -18,7 +18,8 @@
     "vite": "npm:vite@^5.4.0",
     "@vitejs/plugin-react": "npm:@vitejs/plugin-react@^4.3.0",
     "@cucumber/gherkin": "npm:@cucumber/gherkin@^29.0.0",
-    "@cucumber/messages": "npm:@cucumber/messages@^26.0.0"
+    "@cucumber/messages": "npm:@cucumber/messages@^26.0.0",
+    "@std/assert": "jsr:@std/assert@^1.0.0"
   },
   "compilerOptions": {
     "lib": ["ES2020", "DOM", "DOM.Iterable", "deno.ns"],

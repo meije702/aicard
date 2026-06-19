@@ -7,7 +7,7 @@ import { createSubRecipeRunner } from '../runner/sub-recipe-runner.ts'
 import { checkRecipeReadiness, recipeHasWaitSteps } from '../runner/recipe-readiness.ts'
 import { appendJournalEntry } from '../kitchen/journal.ts'
 import { RecipeBuilder } from '../test/helpers/recipe-builder.ts'
-import { assertEquals, assertExists } from 'jsr:@std/assert'
+import { assertEquals, assertExists } from '@std/assert'
 import type { World } from '../test/bdd/world.ts'
 
 Given('a recipe that needs {string} and {string}', (world: World, eq1: string, eq2: string) => {

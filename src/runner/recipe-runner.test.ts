@@ -1,7 +1,7 @@
 // Tests for the recipe runner: Level 2 config overrides, cancellation,
 // error handling, step references, sub-recipe delegation, and interactions.
 
-import { assertEquals, assertStringIncludes } from 'jsr:@std/assert'
+import { assertEquals, assertStringIncludes } from '@std/assert'
 import { runRecipe } from './recipe-runner.ts'
 import type { Recipe, Kitchen } from '../types.ts'
 import type { CardExecutor } from '../cards/card-executor.ts'
