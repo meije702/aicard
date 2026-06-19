@@ -226,6 +226,8 @@ aicard/
 deno install                # install / sync dependencies
 deno task dev               # start dev server (Vite, http://localhost:5173)
 deno task test              # run the test suite (deno test --allow-read src/)
+deno task lint              # lint all source files (deno lint src/)
+deno task verify            # check + lint + test — run before each commit
 deno task build             # build frontend + compile binary → ./aicard
 deno task build:frontend    # build the React app into dist/ only
 deno task compile           # compile dist/ + server.ts → ./aicard binary
@@ -250,10 +252,11 @@ The data flow is: **Recipe file → Parser → Recipe object → Runner → Card
 ## Testing
 
 - **Run tests**: `deno test --allow-read src/`
+- **Quality gates**: `deno task verify` runs the full set — type-check (`deno check src/`), lint (`deno lint src/`), and tests. CI runs the same three plus markdown lint, so a contribution that passes `deno task verify` locally will pass CI.
 - **Unit tests**: `*.test.ts` files next to the source they test
 - **BDD features**: `src/features/*.steps.test.ts` using custom step registry in `src/test/bdd/`
 - **Fixtures**: `src/fixtures/` — example `.recipe.md` and `.card.md` files used by tests
-- **Assertion library**: `jsr:@std/assert`
+- **Assertion library**: `@std/assert` (mapped from `jsr:@std/assert` in `deno.json`)
 - **Principle 3**: write the test or define success criteria before writing implementation
 
 ---
