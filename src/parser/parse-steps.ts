@@ -81,7 +81,7 @@ function parseStepBlock(block: string[], lineNumber: number): ParseResult<Recipe
   if (!headingMatch) {
     return {
       value: null,
-      errors: [`Line ${lineNumber}: Could not parse step heading: "${headingLine}"`],
+      errors: [`Line ${lineNumber}: couldn't read this step heading. Use the format "### 1. Step name".`],
     }
   }
 

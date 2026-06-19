@@ -215,7 +215,10 @@ export default function App() {
             background: 'var(--color-surface)', borderRadius: '12px',
             padding: '24px', maxWidth: '480px', width: '90%',
           }}>
-            <h2 style={{ margin: '0 0 12px', fontSize: '1rem' }}>Recipe file has errors</h2>
+            <h2 style={{ margin: '0 0 12px', fontSize: '1rem' }}>We couldn't open this recipe</h2>
+            <p style={{ margin: '0 0 12px', fontSize: '0.875rem' }}>
+              These are usually small formatting slips. Here's what tripped us up:
+            </p>
             <ul style={{ margin: '0 0 16px', paddingLeft: '1.25rem', fontSize: '0.875rem' }}>
               {recipeParseErrors.map((e, i) => <li key={i}>{e}</li>)}
             </ul>
