@@ -8,6 +8,8 @@ import { parseRecipe } from '../parser/recipe-parser.ts'
 import { loadKitchen, saveKitchen, upsertRecipe, upsertCardDefinition, setHouseStyle } from '../kitchen/kitchen-state.ts'
 import { appendJournalEntry } from '../kitchen/journal.ts'
 import thankYouRecipeMd from '../fixtures/recipes/thank-you-follow-up.recipe.md?raw'
+import newCustomerWelcomeMd from '../fixtures/recipes/new-customer-welcome.recipe.md?raw'
+import reviewRequestMd from '../fixtures/recipes/review-request.recipe.md?raw'
 import { builtInCards } from '../fixtures/pantry/built-in-cards.ts'
 import { getEquipmentDefinition } from '../fixtures/equipment/index.ts'
 import { loadSousChefSetup, saveSousChefSetup, deriveActiveConfig } from './sous-chef-storage.ts'
@@ -21,6 +23,10 @@ import RecipeTour from './tour/RecipeTour.tsx'
 import LiteParseSpike from './LiteParseSpike.tsx'
 import styles from './App.module.css'
 
+// Starter recipes seeded into an empty kitchen on first open, so a new user
+// always lands on something runnable they can read, run, and tweak.
+const STARTER_RECIPES = [thankYouRecipeMd, newCustomerWelcomeMd, reviewRequestMd]
+
 type Screen = 'kitchen' | 'recipe' | 'liteparse'
 
 export default function App() {
@@ -29,11 +35,13 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('kitchen')
   const [kitchen, setKitchen] = useState(() => {
     let k = loadKitchen()
-    // Seed with the starter recipe on first open — Finding 1
+    // Seed the starter recipes on first open so the kitchen is never empty — Finding 1
     if (k.recipes.length === 0) {
-      const parsed = parseRecipe(thankYouRecipeMd)
-      if (parsed.success) {
-        k = upsertRecipe(k, parsed.recipe)
+      for (const recipeMd of STARTER_RECIPES) {
+        const parsed = parseRecipe(recipeMd)
+        if (parsed.success) {
+          k = upsertRecipe(k, parsed.recipe)
+        }
       }
     }
     // Seed built-in card definitions so the pantry is always populated

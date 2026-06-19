@@ -8,6 +8,12 @@ const thankyouFixture = await Deno.readTextFile(
 const communityFixture = await Deno.readTextFile(
   new URL('../fixtures/recipes/community-message-router.recipe.md', import.meta.url)
 )
+const newCustomerWelcomeFixture = await Deno.readTextFile(
+  new URL('../fixtures/recipes/new-customer-welcome.recipe.md', import.meta.url)
+)
+const reviewRequestFixture = await Deno.readTextFile(
+  new URL('../fixtures/recipes/review-request.recipe.md', import.meta.url)
+)
 
 function asCardStep(step: unknown): CardStep {
   const s = step as CardStep
@@ -41,6 +47,20 @@ Deno.test("parseRecipe: parses CRLF (Windows) files identically to LF", () => {
   assertEquals(crlf.name, lf.name)
   assertEquals(crlf.purpose, lf.purpose)
   assertEquals(crlf.steps.length, lf.steps.length)
+})
+
+// --- seeded starter recipes (must always parse — they ship in the kitchen) ---
+
+Deno.test("parseRecipe: New Customer Welcome starter parses (Listen -> Send)", () => {
+  const recipe = expectSuccess(newCustomerWelcomeFixture)
+  assertEquals(recipe.name, 'New Customer Welcome')
+  assertEquals(recipe.steps.length, 2)
+})
+
+Deno.test("parseRecipe: Review Request starter parses (Listen -> Wait -> Send)", () => {
+  const recipe = expectSuccess(reviewRequestFixture)
+  assertEquals(recipe.name, 'Review Request')
+  assertEquals(recipe.steps.length, 3)
 })
 
 // --- thank-you-follow-up fixture ---
