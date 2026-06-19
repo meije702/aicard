@@ -24,7 +24,7 @@ function stubExecutor(overrides: Partial<CardExecutor> = {}): CardExecutor {
     return {
         type: 'listen',
         checkEquipment: () => ({ ready: true, missing: [] }),
-        execute: async () => ({ success: true, output: {}, message: 'done' }),
+        execute: () => Promise.resolve({ success: true, output: {}, message: 'done' }),
         describe: () => 'Stub step',
         ...overrides,
     }

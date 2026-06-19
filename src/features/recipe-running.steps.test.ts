@@ -102,7 +102,7 @@ When('I run the step with the user entering {string} as {string} and {string} as
             { 'listen for': 'new order', from: 'Shopify' },
             {},
             world.kitchen,
-            async () => ({ [field1]: value1, [field2]: value2 })
+            () => Promise.resolve({ [field1]: value1, [field2]: value2 })
         )
     }
 )
@@ -183,8 +183,9 @@ When('I run the recipe and during review change {string} to {string}',
             () => override,
             undefined,
             undefined,
-            async () => {
+            () => {
                 override = { [key]: value }
+                return Promise.resolve()
             }
         )
     }
@@ -215,7 +216,7 @@ When('I run the recipe and enter {string} as {string} with journal tracking',
                     }
                 }
             },
-            async (stepIndex, interaction) => {
+            (stepIndex, interaction) => {
                 const values: Record<string, string> = { [field]: value }
                 const recipeStep = world.recipe?.steps[stepIndex]
                 const cardType = recipeStep && 'card' in recipeStep ? recipeStep.card : undefined
@@ -238,7 +239,7 @@ When('I run the recipe and enter {string} as {string} with journal tracking',
                     }
                 }
 
-                return values
+                return Promise.resolve(values)
             }
         )
     }
