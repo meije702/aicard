@@ -1,120 +1,111 @@
 # Kitchen Counter
 
-Open questions and things to figure out. This is not a backlog — it's a thinking surface.
+*Things on our mind. Not a plan — just a surface for thinking.*
+
+*Last touched: 19 June 2026*
 
 ---
 
-## The hard problems
+## Needs answering before we build
 
-### The Wait problem
+- Can a small local AI model handle Level 1 and Level 2 sous chef tasks?
+  The greeting, the kitchen setup, interpreting "warm" → "professional" —
+  bounded stuff. This is testable with an experiment, not a debate.
+  Mid-2026 evidence (June review): the bounded interpretation jobs look
+  fine at 1B–3B. The risk is the open-ended part — conversational kitchen
+  setup is exactly where small local models are weakest, and reliability
+  swings by device. Still gated on the real-user test, which hasn't
+  happened yet. Until it does, don't let "offline first" promise more
+  than we've shown.
 
-"Wait 3 days" means something has to run in the background. A browser tab can't do that reliably.
-
-**v1 decision**: use `setTimeout` and keep the tab open. Show a persistent warning before running any recipe with a Wait step. Make the limitation honest and visible — not buried in documentation.
-
-**Future options**:
-
-- A lightweight local service (Electron or a small Node daemon) that handles timers
-- A hosted service that users can opt into
-- The user's own server / cloud function
-
-The v1 approach is an honest trade-off. It works for short waits (hours). It is fragile for long waits (days). Name this in the code and in the UI.
-
----
-
-### The equipment connection problem
-
-How do you connect equipment without a backend? OAuth flows typically require a redirect back to a server.
-
-**v1 decision**: start with API key authentication for equipment that supports it (e.g., Shopify API keys). This is less smooth than OAuth but works entirely in the browser. Add a clear explanation of why we're asking for an API key.
-
-**Future**: a lightweight auth proxy service that handles OAuth redirects.
+- How does the Wait card actually work when the browser is closed?
+  "Wait 3 days" means something has to run in the background. A browser tab
+  can't do that. This affects the "just open it in a browser" promise.
+  Probably needs a lightweight local service. Trade-off to name clearly.
 
 ---
 
-### The "running in the background" problem
+## Design decisions to make (not build yet)
 
-A recipe that is listening for an event (Listen card) needs to poll or receive a webhook. A browser tab can poll, but polling is battery-intensive and stops when the tab is closed.
+- How far can the Decide card branch before a recipe stops reading like steps?
+  Constraint proposal: Decide only routes to sub-recipes, never inline steps.
+  Keeps the recipe linear. Test this against a real example before committing.
 
-**v1 decision**: polling every 30 seconds while the tab is open. Show the polling status. Warn the user if the tab has been closed and reopened that the recipe may have missed events.
+- Governance and funding model for "open source, forever."
+  The manifesto promises permanence. Permanence requires a plan. Not urgent,
+  but write a GOVERNANCE.md before the first external contributor arrives.
 
-**Future**: webhooks via a small backend service, or a local service.
+- Who do we put v1 in front of first? Maria, Jun, Sam are co-equal as a
+  design target — if it doesn't work for all three it doesn't ship. But
+  for *adoption*, the June review points the other way: the makers (Jun)
+  and the control-wanters (Sam) are the reliable early users. Maria
+  arrives later, through a recipe someone she trusts hands her — which is
+  already how her success story starts in the personas doc. Sequencing
+  call, not a persona change.
 
----
+- How does a card stay reliable when a small local model drives the tool
+  call? Forcing a 1B–3B model into a rigid JSON/MCP schema measurably
+  hurts its accuracy. Likely answer: natural-language-first invocation,
+  validate the result, retry, fall back to a bigger/cloud model on
+  failure. Decide the fallback policy per card type before building the
+  executor for real.
 
-### ~~The sub-recipe problem~~ ✓ Resolved
-
-Implemented in Level 3 (commit `2420481`). Sub-recipe steps use the `OnSubRecipe` callback pattern with `createSubRecipeRunner` factory. Recipes are looked up by name in the kitchen. Max nesting depth is 3.
-
----
-
-### The card config value types problem
-
-Config values in recipe files are strings: `How long: 3 days`. Some cards need to parse these into durations, numbers, or references to earlier step outputs.
-
-**v1 decision**: all config values are strings. Each card executor is responsible for parsing its own config values. Document the expected format in the card definition.
-
-**Future**: a config value type system with validation at parse time.
-
----
-
-### The "output flows into the next step" problem
-
-A Listen card captures data (the new order). A Send Message card needs some of that data (the customer's email). How does data flow between steps?
-
-**v1 decision**: a `RecipeContext` object accumulates step outputs. Card executors read from context using step names or numbers as keys. The format for referencing earlier outputs in config is: `{step 1: customer email}`.
-
-This is intentionally simple. It handles the thank-you recipe. It will not handle complex data transformations.
+- How much of the MCP world do we actually expose? The ecosystem won, but
+  its security in 2026 is rough — only a small minority of public servers
+  are trustworthy. For non-technical people connecting their own accounts,
+  ship a small vetted starter set of equipment, not the open firehose.
+  Curation is a safety decision, not a catalogue decision.
 
 ---
 
-### ~~The technique injection problem~~ ✓ Resolved
+## Things to build and discover
 
-Prompt assembly is implemented in `src/sous-chef/prompt-context.ts`. The order is: system prompt → technique → house style → recent corrections → step context. Journal entries are pruned to the 3 most recent corrections per card type. Token budgeting per section is not yet implemented — currently manageable because house style is short and corrections are capped.
+- The recipe parser. Fast, deterministic, reads the six structural markers.
+  Hands structure to the machine, values to the AI. Feed it messy input and
+  see where it breaks. This probably unblocks the most other things.
 
----
-
-### The journal storage problem
-
-The kitchen journal is append-only and stored in localStorage (~5MB limit). It grows with every recipe run.
-
-**Tentative policy**: keep the most recent 100 entries per card type, or entries from the last 30 days, whichever is smaller. Prune on write.
+- Data mapping — what happens when "customer from the order" matches three
+  email fields? Build the clarification flow. Sous chef asks once, remembers.
+  Or asks every time? We'll learn by trying.
 
 ---
 
-### ~~The house style editing problem~~ ✓ Resolved
+## New ideas from today
 
-Implemented as a free-text field in the kitchen settings (`src/ui/Kitchen.tsx`). Maria types her preferences, saves, and the house style is injected into every card prompt via `buildPromptContext()`. The sous-chef-guided interview remains a future enhancement.
+- **The kitchen counter itself.** This concept isn't in the domain language yet.
+  It should be. It's the surface where thinking lives before it becomes a
+  recipe. Your wife's notebook before and during cooking. Needs writing up
+  and adding to AICard_Domain_Language.md.
 
----
+- **The sous chef helps with overwhelm, not just errors.** When Maria has three
+  things she wants to automate, the sous chef's job isn't "pick one." It's
+  "help her see what to do first and why, without making the other things
+  feel dismissed." This is a Level 1 need, not a Level 5 need. Needs adding
+  to the sous chef's role in the domain language.
 
-### ~~The correction detection problem~~ ✓ Resolved
-
-Only corrections made within AICard's review panel are captured — edits in external apps are invisible. Implemented in `src/kitchen/journal.ts` as an append-only journal with pruning (100 entries per card type, 30 days max). Recent corrections are injected as few-shot examples via `buildPromptContext()`.
-
----
-
-## Things to decide later
-
-- What does a recipe marketplace look like? (Level 3+)
-- How do users share recipes? (Level 3+)
-- What card types come after the first three? (Filter, Transform, Branch are candidates)
-- How does the sous chef learn about new card types it hasn't seen before?
-- What happens when a recipe errors mid-run? Can it resume?
-- Should recipe files be version-controlled? (Yes, obviously — they're text files. How do we explain this to Maria?)
+- **Dogfooding works.** We just set up our own kitchen to manage building
+  AICard. If this counter helps us think, that's evidence the concept works.
+  If it doesn't, that's more valuable — it tells us what's missing.
 
 ---
 
-## Things that seem hard but probably aren't
+## Simmering (not now, but don't forget)
 
-- **Parsing the recipe format** — it's structured Markdown with a small grammar. Not hard.
-- **The sous chef knowing the kitchen state** — pass the kitchen as context. Simple.
-- **Showing what a recipe will do before running it** — `describe()` on each step. Already designed.
+- Journey 4 through 7 from the user journeys doc — sharing, combining,
+  failure, upgrading. These need designing but not before Level 1 is solid.
+
+- The full core pantry. We have three cards. The domain language mentions
+  eight capabilities (listening, filtering, summarizing, transforming,
+  deciding, waiting, storing, sending). Which ones are v1?
+
+- What does Jun's kitchen counter look like? Probably messy and full.
+  That's fine — but does the format support that energy?
+
+- The "better oven" upgrade moment. When does the sous chef suggest it?
+  What does it feel like? This is a user journey waiting to be written.
 
 ---
 
-## Things that seem easy but probably aren't
-
-- **Getting Maria to connect her equipment** — this is a UX problem, not a technical one. The flow needs to be warm, clear, and forgiving.
-- **Making the sous chef feel helpful rather than intrusive** — the two-surface design (hat + toast) should solve this, but it needs careful tuning.
-- **Making recipe files that Jun can read and Maria can also understand** — the format serves both. Keep it that way.
+*Cross things off when they're done. Add things when they come to mind.
+The counter is never empty and never finished — that's how you know
+the kitchen is alive.*
