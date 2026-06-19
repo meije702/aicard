@@ -10,6 +10,7 @@ Read these documents first. They are short and they are the source of truth:
 2. [docs/AICard_Domain_Language.md](docs/AICard_Domain_Language.md) — the shared vocabulary
 3. [docs/AICard_Personas.md](docs/AICard_Personas.md) — Maria, Jun, Sam
 4. [docs/Seven_Principles_of_Engineering_Thinking.md](docs/Seven_Principles_of_Engineering_Thinking.md) — the engineering mindset
+5. [GOVERNANCE.md](GOVERNANCE.md) — how decisions are made and the "open source, forever" guarantee
 
 If you have not read these, your contribution will likely not match the project's expectations. This applies whether you are a human or an AI agent.
 

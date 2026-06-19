@@ -34,8 +34,9 @@
   Keeps the recipe linear. Test this against a real example before committing.
 
 - Governance and funding model for "open source, forever."
-  The manifesto promises permanence. Permanence requires a plan. Not urgent,
-  but write a GOVERNANCE.md before the first external contributor arrives.
+  The manifesto promises permanence. Permanence requires a plan. A draft now
+  lives in `GOVERNANCE.md` — it still needs the maintainer's calls on the
+  funding stance and who the maintainers are (both marked "Decision needed").
 
 - Who do we put v1 in front of first? Maria, Jun, Sam are co-equal as a
   design target — if it doesn't work for all three it doesn't ship. But
