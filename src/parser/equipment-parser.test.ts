@@ -19,6 +19,16 @@ function expectSuccess(markdown: string): EquipmentDefinition {
   return parsed.equipment
 }
 
+// --- line-ending normalisation ---
+
+Deno.test('parseEquipmentDefinition: parses CRLF (Windows) files identically to LF', () => {
+  const lf = expectSuccess(shopifyMd)
+  const crlf = expectSuccess(shopifyMd.replace(/\n/g, '\r\n'))
+  assertEquals(crlf.name, lf.name)
+  assertEquals(crlf.purpose, lf.purpose)
+  assertEquals(crlf.steps.length, lf.steps.length)
+})
+
 // --- Shopify fixture ---
 
 Deno.test('parseEquipmentDefinition: parses Shopify name and purpose', () => {

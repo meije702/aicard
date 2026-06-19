@@ -33,6 +33,16 @@ function expectFailure(markdown: string) {
   return parsed
 }
 
+// --- line-ending normalisation ---
+
+Deno.test("parseRecipe: parses CRLF (Windows) files identically to LF", () => {
+  const lf = expectSuccess(thankyouFixture)
+  const crlf = expectSuccess(thankyouFixture.replace(/\n/g, '\r\n'))
+  assertEquals(crlf.name, lf.name)
+  assertEquals(crlf.purpose, lf.purpose)
+  assertEquals(crlf.steps.length, lf.steps.length)
+})
+
 // --- thank-you-follow-up fixture ---
 
 Deno.test("parseRecipe: parses the recipe name from the title heading", () => {

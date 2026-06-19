@@ -15,7 +15,10 @@ import { extractSectionWithLineInfo as extractSection } from './section-helpers.
 import { parseSteps } from './parse-steps.ts'
 
 export function parseRecipe(markdown: string): ParsedRecipe {
-  const lines = markdown.split('\n')
+  // Split on \r?\n so Windows (CRLF) files parse identically to Unix (LF).
+  // Without this, a trailing \r defeats the ^...$ heading regexes and a valid
+  // recipe is rejected with a misleading "missing title" error.
+  const lines = markdown.split(/\r?\n/)
 
   const nameResult  = parseName(lines)
   const purposeResult = parsePurpose(lines)
