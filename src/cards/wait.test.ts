@@ -55,6 +55,16 @@ Deno.test('waitExecutor: invalid duration fails with helpful message', async () 
   assertEquals(result.message?.includes('Try something like'), true)
 })
 
+Deno.test('waitExecutor: over-long wait fails instead of firing immediately', async () => {
+  const kitchen: Kitchen = { equipment: [], recipes: [], pantry: [] }
+  const context: RecipeContext = {}
+  // 30 days exceeds setTimeout's ~24.8-day ceiling, which would otherwise
+  // resolve at once in the browser.
+  const result = await waitExecutor.execute({ 'how long': '30 days' }, context, kitchen)
+  assertEquals(result.success, false)
+  assertEquals(result.message?.includes('too long'), true)
+})
+
 // Equipment check
 
 Deno.test('waitExecutor: checkEquipment always ready', () => {
