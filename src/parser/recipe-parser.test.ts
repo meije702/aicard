@@ -374,3 +374,17 @@ Deno.test("parseRecipe: one valid step and one invalid step accumulates error fo
   assertEquals(result.partialRecipe.steps?.length, 1)
   assertEquals(result.errors.some(e => e.includes('MadeUpCard') || e.includes('madeupcard')), true)
 })
+
+Deno.test("parseRecipe: an unreadable step heading explains the expected format", () => {
+  const result = expectFailure(`
+# Bad Heading
+> A step heading missing its number.
+## Kitchen
+- None
+## Steps
+### Listen for orders
+*Card: Listen*
+  `)
+  // The message should guide the fix, not dump the raw line.
+  assertEquals(result.errors.some(e => e.includes('step heading') && e.includes('### 1.')), true)
+})
