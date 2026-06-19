@@ -33,13 +33,13 @@ export default function HouseStyleForm({ houseStyle, onSave }: Props) {
       />
       {dirty && (
         <div className={styles.houseStyleActions}>
-          <button
+          <button type="button"
             className={styles.houseStyleSave}
             onClick={() => onSave(draft)}
           >
             Save
           </button>
-          <button
+          <button type="button"
             className={styles.houseStyleCancel}
             onClick={() => setDraft(houseStyle ?? '')}
           >

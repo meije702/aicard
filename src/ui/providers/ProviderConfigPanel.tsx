@@ -89,16 +89,16 @@ export default function ProviderConfigPanel({
                 ? `${entry.model || 'llama3.2'} · ${entry.baseUrl ?? 'http://localhost:11434'}`
                 : maskedKey(entry.apiKey)}
             </span>
-            <button className={styles.secondaryButton} onClick={() => setEditing(true)}>
+            <button type="button" className={styles.secondaryButton} onClick={() => setEditing(true)}>
               Edit
             </button>
-            <button className={`${styles.secondaryButton} ${styles.removeButton}`} onClick={onRemove}>
+            <button type="button" className={`${styles.secondaryButton} ${styles.removeButton}`} onClick={onRemove}>
               Remove
             </button>
           </div>
           {!isActive && (
             <div className={styles.actions}>
-              <button className={styles.primaryButton} onClick={() => onMakeActive()}>
+              <button type="button" className={styles.primaryButton} onClick={() => onMakeActive()}>
                 Use this sous chef
               </button>
             </div>
@@ -127,7 +127,7 @@ export default function ProviderConfigPanel({
           )}
 
           <div className={styles.actions}>
-            <button
+            <button type="button"
               className={styles.primaryButton}
               onClick={handleMakeActive}
               disabled={!canSave}
@@ -135,7 +135,7 @@ export default function ProviderConfigPanel({
               {hasSavedKey ? 'Save and use' : 'Use this sous chef'}
             </button>
             {hasSavedKey && (
-              <button className={styles.secondaryButton} onClick={() => { setEditing(false); setApiKey(entry.apiKey) }}>
+              <button type="button" className={styles.secondaryButton} onClick={() => { setEditing(false); setApiKey(entry.apiKey) }}>
                 Cancel
               </button>
             )}

@@ -25,11 +25,11 @@ export default function RecipeRunArea({
   return (
     <div className={styles.runArea} aria-live="polite" data-tour="run-area">
       {isRunning ? (
-        <button className={styles.stopButton} onClick={onStop} aria-label="Stop recipe">
+        <button type="button" className={styles.stopButton} onClick={onStop} aria-label="Stop recipe">
           Stop
         </button>
       ) : !isPaused ? (
-        <button
+        <button type="button"
           className={styles.runButton}
           onClick={onRun}
           disabled={!ready}

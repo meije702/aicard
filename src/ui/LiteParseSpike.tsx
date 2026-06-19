@@ -68,7 +68,7 @@ export default function LiteParseSpike({ sousChefConfig, onRecipeParsed, onBack 
 
   return (
     <div className={styles.container}>
-      <button className={styles.secondaryButton} onClick={onBack} style={{ marginBottom: 16, flex: 'none', width: 'auto' }}>
+      <button type="button" className={styles.secondaryButton} onClick={onBack} style={{ marginBottom: 16, flex: 'none', width: 'auto' }}>
         Back to kitchen
       </button>
 
@@ -106,7 +106,7 @@ export default function LiteParseSpike({ sousChefConfig, onRecipeParsed, onBack 
         />
       </div>
 
-      <button
+      <button type="button"
         className={styles.transcribeButton}
         disabled={!canTranscribe}
         onClick={handleTranscribe}
@@ -132,9 +132,9 @@ export default function LiteParseSpike({ sousChefConfig, onRecipeParsed, onBack 
           )}
 
           <div className={styles.actions}>
-            <button className={styles.secondaryButton} onClick={handleReset}>Try another</button>
+            <button type="button" className={styles.secondaryButton} onClick={handleReset}>Try another</button>
             {parsed.success && (
-              <button className={styles.transcribeButton} style={{ flex: 1, marginTop: 0 }} onClick={handleUseRecipe}>
+              <button type="button" className={styles.transcribeButton} style={{ flex: 1, marginTop: 0 }} onClick={handleUseRecipe}>
                 Use this recipe
               </button>
             )}

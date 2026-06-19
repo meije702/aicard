@@ -55,7 +55,7 @@ export default function Kitchen({ kitchen, onOpenRecipe, onOpenLiteParse, onOpen
                 <div className={styles.apiKeyHint}>Your key stays in your browser only.</div>
               </div>
             </div>
-            <button
+            <button type="button"
               className={styles.editSetupButton}
               onClick={() => setSetupExpanded(true)}
               aria-label="Edit sous chef configuration"
@@ -79,7 +79,7 @@ export default function Kitchen({ kitchen, onOpenRecipe, onOpenLiteParse, onOpen
                 </div>
               </div>
               {isConnected && (
-                <button
+                <button type="button"
                   className={styles.editSetupButton}
                   onClick={() => setSetupExpanded(false)}
                   aria-label="Collapse sous chef configuration"

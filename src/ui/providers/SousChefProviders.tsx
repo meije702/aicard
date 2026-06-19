@@ -113,7 +113,7 @@ function ProviderLogo({
     : ''
 
   return (
-    <button
+    <button type="button"
       className={`${styles.providerButton} ${stateClass} ${expanded ? styles.providerExpanded : ''}`}
       style={{ '--provider-brand': provider.brandColor } as React.CSSProperties}
       onClick={onClick}

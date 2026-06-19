@@ -53,14 +53,14 @@ export default function CardConfig({ step, fieldDescriptions, onSave, onCancel }
       <p className={styles.configHint}>Changes apply to this run only. The original recipe file is not modified.</p>
 
       <div className={styles.configActions}>
-        <button
+        <button type="button"
           className={styles.cancelButton}
           onClick={onCancel}
           aria-label="Cancel editing"
         >
           Cancel
         </button>
-        <button
+        <button type="button"
           className={styles.saveButton}
           onClick={() => onSave(config)}
           aria-label="Save configuration changes"

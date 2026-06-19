@@ -105,7 +105,7 @@ export default function App() {
             <span className={styles.breadcrumbLabel}>{activeRecipe.name}</span>
           </>
         )}
-        <button
+        <button type="button"
           className={styles.themeToggle}
           onClick={toggleTheme}
           aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
@@ -200,7 +200,7 @@ export default function App() {
             <ul style={{ margin: '0 0 16px', paddingLeft: '1.25rem', fontSize: '0.875rem' }}>
               {recipeParseErrors.map((e, i) => <li key={i}>{e}</li>)}
             </ul>
-            <button onClick={() => setRecipeParseErrors([])}>Dismiss</button>
+            <button type="button" onClick={() => setRecipeParseErrors([])}>Dismiss</button>
           </div>
         </div>
       )}

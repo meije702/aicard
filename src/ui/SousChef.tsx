@@ -112,7 +112,7 @@ export default function SousChef({ sousChefConfig, recipe, kitchen, runState: ex
       )}
 
       {/* Hat button */}
-      <button
+      <button type="button"
         ref={hatButtonRef}
         className={`${styles.hatButton} ${isOpen ? styles.hatButtonOpen : ''}`}
         onClick={handleOpenHat}

@@ -67,7 +67,7 @@ export default function HatPanel({
             </div>
           ) : (
             options.map((opt, i) => (
-              <button
+              <button type="button"
                 key={i}
                 className={styles.option}
                 onClick={() => onSelectOption(opt)}
@@ -95,7 +95,7 @@ export default function HatPanel({
                 autoFocus
                 aria-label="Ask the sous chef a question"
               />
-              <button
+              <button type="button"
                 className={styles.askSendButton}
                 onClick={onAsk}
                 disabled={!question.trim() || loadingAnswer}
@@ -118,7 +118,7 @@ export default function HatPanel({
                 <p className={styles.answerQuestion}>{question}</p>
               )}
               <MarkdownText text={answer} className={styles.markdown} />
-              <button
+              <button type="button"
                 className={styles.backLink}
                 onClick={onBack}
               >
