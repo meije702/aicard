@@ -41,8 +41,8 @@ export function useTourPosition(targetSelector: string): TourPosition {
     }
 
     const rect = el.getBoundingClientRect()
-    const viewportHeight = window.innerHeight
-    const viewportWidth = window.innerWidth
+    const viewportHeight = globalThis.innerHeight
+    const viewportWidth = globalThis.innerWidth
 
     // Decide: below or above?
     const spaceBelow = viewportHeight - rect.bottom - SPOTLIGHT_PADDING
@@ -84,7 +84,7 @@ export function useTourPosition(targetSelector: string): TourPosition {
 
     // Check if already in viewport
     const rect = el.getBoundingClientRect()
-    const inViewport = rect.top >= 0 && rect.bottom <= window.innerHeight
+    const inViewport = rect.top >= 0 && rect.bottom <= globalThis.innerHeight
 
     if (!inViewport) {
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -99,12 +99,12 @@ export function useTourPosition(targetSelector: string): TourPosition {
 
   // Recalculate on scroll and resize — pure measurement only, no scrolling.
   useEffect(() => {
-    window.addEventListener('scroll', measure, { passive: true })
-    window.addEventListener('resize', measure, { passive: true })
+    globalThis.addEventListener('scroll', measure, { passive: true })
+    globalThis.addEventListener('resize', measure, { passive: true })
 
     return () => {
-      window.removeEventListener('scroll', measure)
-      window.removeEventListener('resize', measure)
+      globalThis.removeEventListener('scroll', measure)
+      globalThis.removeEventListener('resize', measure)
     }
   }, [measure])
 

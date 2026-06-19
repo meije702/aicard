@@ -6,7 +6,7 @@ import { useState, useLayoutEffect } from 'react'
 function getInitialTheme(): 'light' | 'dark' {
   const stored = localStorage.getItem('aicard:theme')
   if (stored === 'dark' || stored === 'light') return stored
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return globalThis.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 export function useTheme() {
