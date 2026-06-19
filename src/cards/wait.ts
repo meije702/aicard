@@ -8,6 +8,11 @@
 import type { CardConfig, CardResult, EquipmentCheck, Kitchen, RecipeContext } from '../types.ts'
 import type { CardExecutor, OnInteraction } from './card-executor.ts'
 
+// Browsers clamp setTimeout delays to a signed 32-bit int; anything larger
+// (~24.8 days) overflows and fires immediately. We refuse waits beyond this so
+// a long Wait fails honestly instead of silently completing all at once.
+const MAX_SETTIMEOUT_MS = 2_147_483_647
+
 export const waitExecutor: CardExecutor = {
   type: 'wait',
 
@@ -30,6 +35,14 @@ export const waitExecutor: CardExecutor = {
         success: false,
         output: {},
         message: `Couldn't understand the wait duration: "${duration}". Try something like "3 days" or "1 hour".`,
+      }
+    }
+
+    if (ms > MAX_SETTIMEOUT_MS) {
+      return {
+        success: false,
+        output: {},
+        message: `That wait is too long to run reliably right now: "${duration}". Try about 24 days or less.`,
       }
     }
 
