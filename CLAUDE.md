@@ -25,8 +25,10 @@ See AGENTS.md for the full list. Quick reference:
 deno install           # install / sync dependencies
 deno task dev          # start the dev server (Vite, http://localhost:5173)
 deno task test         # run the test suite (deno test)
-deno task build        # build frontend + compile binary → ./aicard
+deno task lint         # lint all source files (deno lint src/)
 deno check src/        # type-check all source files
+deno task verify       # check + lint + test — run before each commit
+deno task build        # build frontend + compile binary → ./aicard
 ```
 
 ## Language rules

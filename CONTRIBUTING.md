@@ -70,6 +70,8 @@ Welcome. Use the correct [domain language](docs/AICard_Domain_Language.md).
 deno install                # install dependencies
 deno task dev               # start dev server (http://localhost:5173)
 deno task test              # run the test suite
+deno task lint              # lint all source files (deno lint src/)
+deno task verify            # check + lint + test — run before each commit
 deno task build             # build frontend + compile binary → ./aicard
 deno task build:frontend    # build the React app into dist/ only
 deno task compile           # compile dist/ + server.ts → ./aicard binary
@@ -173,12 +175,12 @@ Fixes #42
 
 1. Fork the repository and create a branch from `main`.
 2. Make your changes. Write tests. Use the domain language.
-3. Run `deno task test` and `deno check src/` locally.
+3. Run `deno task verify` locally (type-check + lint + test).
 4. Open a PR using the [pull request template](.github/PULL_REQUEST_TEMPLATE.md).
 5. Fill in every section of the template — especially "Why".
 6. Wait for review. Respond to feedback.
 
-Every PR must pass CI (type checking + tests) before review.
+Every PR must pass CI (type checking + lint + tests + markdown lint) before review.
 
 ## Questions?
 
