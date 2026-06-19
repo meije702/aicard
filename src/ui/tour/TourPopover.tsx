@@ -49,7 +49,7 @@ export default function TourPopover({
       {/* Navigation */}
       <div className={styles.nav}>
         {!isFirst && (
-          <button className={styles.navButton} onClick={onBack} disabled={loading}>
+          <button type="button" className={styles.navButton} onClick={onBack} disabled={loading}>
             ← Back
           </button>
         )}
@@ -65,11 +65,11 @@ export default function TourPopover({
         </div>
 
         {isLast ? (
-          <button className={styles.nextButton} onClick={onClose}>
+          <button type="button" className={styles.nextButton} onClick={onClose}>
             Done
           </button>
         ) : (
-          <button className={styles.nextButton} onClick={onNext} disabled={loading}>
+          <button type="button" className={styles.nextButton} onClick={onNext} disabled={loading}>
             Next →
           </button>
         )}

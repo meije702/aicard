@@ -29,7 +29,7 @@ export default function ToastContainer({
         >
           <span>{toast.message}</span>
           {toast.persistent && (
-            <button
+            <button type="button"
               className={styles.toastDismiss}
               onClick={() => onDismiss(toast.id)}
               aria-label="Dismiss"

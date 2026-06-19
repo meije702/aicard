@@ -51,10 +51,10 @@ export default function RecipeWarningBanners({
             </div>
           </div>
           <div className={styles.pausedActions}>
-            <button className={styles.resumeButton} onClick={onResume} disabled={!ready}>
+            <button type="button" className={styles.resumeButton} onClick={onResume} disabled={!ready}>
               Resume
             </button>
-            <button className={styles.startFreshButton} onClick={onStartFresh}>
+            <button type="button" className={styles.startFreshButton} onClick={onStartFresh}>
               Start fresh
             </button>
           </div>

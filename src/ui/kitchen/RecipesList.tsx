@@ -20,7 +20,7 @@ export default function RecipesList({ recipes, onOpenRecipe, onOpenLiteParse, on
       {recipes.length > 0 && (
         <div className={styles.recipeList} role="list">
           {recipes.map(recipe => (
-            <button
+            <button type="button"
               key={recipe.name}
               className={styles.recipeCard}
               onClick={() => onOpenKitchenRecipe(recipe)}
@@ -40,7 +40,7 @@ export default function RecipesList({ recipes, onOpenRecipe, onOpenLiteParse, on
       )}
 
       {/* File picker — always available to add more recipes */}
-      <button
+      <button type="button"
         className={recipes.length > 0 ? styles.recipeDropZoneSmall : styles.recipeDropZone}
         onClick={onOpenRecipe}
         aria-label="Open a recipe file from your computer"
@@ -57,7 +57,7 @@ export default function RecipesList({ recipes, onOpenRecipe, onOpenLiteParse, on
       </button>
 
       {/* LiteParse — photo-to-recipe spike */}
-      <button
+      <button type="button"
         className={styles.recipeDropZoneSmall}
         onClick={onOpenLiteParse}
         aria-label="Transcribe a handwritten recipe from a photo"

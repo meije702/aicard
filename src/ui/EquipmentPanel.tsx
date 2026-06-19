@@ -33,7 +33,7 @@ export default function EquipmentPanel({ equipmentNames, kitchen, onConnectEquip
                 {isHandoff ? 'Ready — sends via you' : 'Connected'}
               </span>
             ) : (
-              <button
+              <button type="button"
                 className={styles.connectButton}
                 onClick={() => onConnectEquipment(name)}
               >

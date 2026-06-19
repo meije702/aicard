@@ -131,7 +131,7 @@ export default function WizardStepRenderer({ step, configFields, onComplete, isL
       )}
 
       <div className={styles.stepActions}>
-        <button
+        <button type="button"
           className={styles.nextButton}
           onClick={handleNext}
           disabled={!canNext}

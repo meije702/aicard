@@ -93,7 +93,7 @@ export default function StepItem({
               <span className={styles.subRecipeBadge}>Sub-recipe</span>
             )}
             {isCardStep && !isEditing && (status === 'pending' || !isRunning) && (
-              <button
+              <button type="button"
                 className={styles.tweakButton}
                 onClick={() => onTweakOpen(index)}
               >
@@ -121,13 +121,13 @@ export default function StepItem({
                 Review this step before it runs, or wait for it to start automatically.
               </span>
               <div className={styles.reviewActions}>
-                <button
+                <button type="button"
                   className={styles.tweakButton}
                   onClick={() => onReviewTweakOpen(index)}
                 >
                   Tweak
                 </button>
-                <button
+                <button type="button"
                   className={styles.reviewConfirmButton}
                   onClick={onReviewConfirm}
                 >

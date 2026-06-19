@@ -94,7 +94,7 @@ export default function RecipeView({ recipe, kitchen, onBack, onConnectEquipment
 
   return (
     <div className={styles.container}>
-      <button className={styles.backButton} onClick={onBack} aria-label="Back to kitchen">
+      <button type="button" className={styles.backButton} onClick={onBack} aria-label="Back to kitchen">
         <span className={styles.backArrow} aria-hidden="true">←</span>
         Back to kitchen
       </button>

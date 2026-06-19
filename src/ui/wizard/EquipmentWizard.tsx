@@ -131,8 +131,8 @@ export default function EquipmentWizard({
                 messages and you send them yourself.
               </div>
               <div className={styles.fallbackActions}>
-                <button className={styles.cancelButton} onClick={onCancel}>Cancel</button>
-                <button className={styles.connectButton} onClick={() => onConnect({ mode: 'compose' })}>
+                <button type="button" className={styles.cancelButton} onClick={onCancel}>Cancel</button>
+                <button type="button" className={styles.connectButton} onClick={() => onConnect({ mode: 'compose' })}>
                   Got it
                 </button>
               </div>
@@ -161,8 +161,8 @@ export default function EquipmentWizard({
                 Your key stays in this browser only — it is never sent to our servers.
               </p>
               <div className={styles.fallbackActions}>
-                <button className={styles.cancelButton} onClick={onCancel}>Cancel</button>
-                <button
+                <button type="button" className={styles.cancelButton} onClick={onCancel}>Cancel</button>
+                <button type="button"
                   className={styles.connectButton}
                   onClick={() => onConnect({ apiKey: fallbackKey.trim() })}
                   disabled={!fallbackKey.trim()}
@@ -227,7 +227,7 @@ export default function EquipmentWizard({
 
         {/* Footer */}
         <div className={styles.footer}>
-          <button className={styles.cancelButton} onClick={onCancel}>
+          <button type="button" className={styles.cancelButton} onClick={onCancel}>
             Cancel
           </button>
         </div>
