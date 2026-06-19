@@ -132,11 +132,11 @@ export default function OllamaSetup({
         <summary className={styles.troubleshootingSummary}>Not working? Common fixes</summary>
         <ul className={styles.troubleshootingList}>
           <li>
-            <strong>{"\"Can't reach Ollama\""}</strong> — Make sure Ollama is running.
+            <strong>"Can't reach Ollama"</strong> — Make sure Ollama is running.
             Open a terminal and run <code className={styles.code}>ollama serve</code>.
           </li>
           <li>
-            <strong>{"\"Model not found\" (404)"}</strong> — The model needs to be downloaded first.
+            <strong>"Model not found" (404)</strong> — The model needs to be downloaded first.
             Run <code className={styles.code}>ollama pull llama3.2</code> in your terminal.
           </li>
           <li>
