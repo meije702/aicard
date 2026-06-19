@@ -109,7 +109,7 @@ When the sous chef executes a card that has a technique, the prompt is assembled
 
 ### Example: Maria's house style
 
-```
+```text
 I run Vondelstraat Bloemen, a small flower shop in Amsterdam.
 I write in a mix of Dutch and English — mostly English for international customers.
 My tone is warm and informal. I use first names.
@@ -158,14 +158,14 @@ In v1, the kitchen journal is stored in localStorage alongside the kitchen data.
 A concrete walkthrough:
 
 1. Maria runs the thank-you recipe for the 10th time.
-2. Step 1 (Listen) captures a new order: "Emma, emma@example.com, ordered a spring bouquet."
+2. Step 1 (Listen) captures a new order: "Emma, `emma@example.com`, ordered a spring bouquet."
 3. Step 2 (Wait) pauses for 3 days.
 4. Step 3 (Send Message) fires. The sous chef receives:
    - **System prompt**: "You are a friendly kitchen assistant..."
    - **Send Message technique**: voice, constraints, expertise
    - **Maria's house style**: warm, informal, Dutch sign-off, short emails
    - **3 recent corrections**: last time Maria changed "Dear Emma" to "Hoi Emma", changed "your recent purchase" to "your beautiful spring bouquet", removed the closing line about "valued customer"
-   - **Step context**: to = emma@example.com, product = spring bouquet
+   - **Step context**: to = `emma@example.com`, product = spring bouquet
 5. The sous chef composes: "Hoi Emma, Thanks so much for ordering the spring bouquet! I hope it's bringing some colour to your week. Warme groet, Maria"
 6. Maria reads it, smiles, sends it without changes.
 7. The journal logs: `{ type: 'approved', step: 3, card: 'send-message' }` — no correction needed this time.

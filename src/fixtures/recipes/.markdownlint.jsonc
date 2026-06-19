@@ -6,5 +6,11 @@
 
   // MD024 — multiple headings with the same content. Two different recipes
   // can legitimately both have a step named "Listen for a new order".
-  "MD024": false
+  "MD024": false,
+
+  // MD022/MD032 — blanks around headings/lists. Recipe files use the compact
+  // recipe-DSL format (heading directly above its content, config list right
+  // under the declaration), which intentionally omits prose spacing.
+  "MD022": false,
+  "MD032": false
 }

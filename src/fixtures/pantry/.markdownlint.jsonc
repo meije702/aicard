@@ -5,5 +5,11 @@
 
   // MD024 — multiple headings with the same content. Multiple cards can have
   // sections named "Config" or field headings like "### Message".
-  "MD024": false
+  "MD024": false,
+
+  // MD022/MD032 — blanks around headings/lists. Card files use the compact
+  // recipe-DSL format (heading directly above its content, config list right
+  // under the declaration), which intentionally omits prose spacing.
+  "MD022": false,
+  "MD032": false
 }
