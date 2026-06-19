@@ -238,8 +238,6 @@ Examples:
 - `listen.card.md`
 - `wait.card.md`
 - `send-message.card.md`
-- `filter.card.md`
-- `transform.card.md`
 
 ---
 
@@ -251,3 +249,4 @@ Examples:
 - The `## Config` section lists config field names and descriptions.
 - The `## Technique` section is optional. If present, it is injected into the sous chef's prompt when executing this card type. Subsections (Voice, Constraints, Expertise) are parsed as structured text.
 - Config field names are normalised to lowercase when used as keys.
+- Sections other than those listed above (for example `## Notes`) are ignored by the parser; they exist to document the card for human readers.

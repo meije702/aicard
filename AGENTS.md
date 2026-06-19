@@ -105,7 +105,7 @@ Expanding the pantry beyond Listen, Wait, Send Message. Candidates: Filter, Tran
 - **Sous chef**: calls any of 5 providers via `createSousChef(config)` — Anthropic, OpenAI, Gemini, Mistral, or Ollama (local, no key required). Each provider has a sensible default model; the user picks which provider and model to use
 - **Card execution**: each card type has an executor; v1 ships with: Listen, Wait, Send Message
 - **Storage**: browser localStorage for kitchen state; file system access via `<input type="file">`
-- **No backend required for v1** — except the Anthropic API for the sous chef
+- **No backend required for v1** — except the AI provider API for the sous chef (Anthropic, OpenAI, Gemini, Mistral, or local Ollama with no key)
 
 ---
 
@@ -165,6 +165,7 @@ aicard/
       provider-logos.tsx         ← SVG logos for each provider
       equipment-icon.ts          ← equipment icon mapping
       markdown-blocks.ts         ← markdown block parser
+      LiteParseSpike.tsx         ← photo-to-recipe transcription UI (experimental)
       kitchen/                   ← kitchen sub-components
         HouseStyleForm.tsx
         RecipesList.tsx
@@ -207,7 +208,9 @@ aicard/
     features/                    ← BDD step definitions (.feature + .steps.test.ts)
     fixtures/                    ← example recipes, cards, and equipment definitions
       pantry/                    ← card type definitions (.card.md)
+        built-in-cards.ts        ← parses and exports the bundled card types
       equipment/                 ← equipment definitions (.equipment.md)
+        index.ts                 ← parses and exports the bundled equipment
     types.ts                     ← shared domain types
     main.tsx                     ← React app entry point
     server.ts                    ← Deno HTTP server (binary target)
@@ -244,7 +247,7 @@ The data flow is: **Recipe file → Parser → Recipe object → Runner → Card
 - **Executor layer** (`src/cards/`): Each card type implements the `CardExecutor` interface. v1 has three executors: Listen, Wait, Send Message.
 - **Kitchen state** (`src/kitchen/`): Equipment tracking. Persistence behind `KitchenRepository` interface; production impl uses localStorage.
 - **Recipe runner** (`src/runner/`): Orchestrates parsing, kitchen checks, and step execution. Readiness logic in `recipe-readiness.ts`; run-state persistence behind `RunStateRepository` interface.
-- **Sous chef** (`src/sous-chef/`): Anthropic API calls for user guidance. Not involved in parsing or execution — only in the user experience.
+- **Sous chef** (`src/sous-chef/`): AI provider calls (Anthropic, OpenAI, Gemini, Mistral, or Ollama) for user guidance. Not involved in parsing or execution — only in the user experience.
 - **UI layer** (`src/ui/`): React components mapping to user journeys.
 
 ---

@@ -6,7 +6,7 @@ A recipe is a plain Markdown file with a `.recipe.md` extension. It is human-rea
 
 ## Structure
 
-A recipe file has five sections, in this order:
+A recipe file has four sections, in this order:
 
 1. **Title** — the recipe name
 2. **Purpose** — a one-sentence description
@@ -93,6 +93,21 @@ After the card/recipe declaration, configuration values are listed as a bulleted
 
 Configuration keys are plain English. The parser normalises them to lowercase.
 
+#### Referencing an earlier step
+
+A configuration value can pull in output captured by an earlier step using the
+syntax `{step N: field name}`:
+
+```markdown
+- To: {step 1: customer email}
+```
+
+At run time, `{step 1: customer email}` is replaced with the `customer email`
+value that step 1 produced (`N` is the 1-based step number; the field name is
+the plain-English key from that step's output). A reference to a step that
+hasn't run yet, or to a field that doesn't exist, surfaces as a run-time error
+rather than being sent literally.
+
 ---
 
 ## Complete example
@@ -126,7 +141,7 @@ Configuration keys are plain English. The parser normalises them to lowercase.
 
 *Card: Send Message*
 
-- To: customer email
+- To: {step 1: customer email}
 - Subject: Thank you for your order
 - Message: We really appreciate your support. Your order is on its way!
 ```
@@ -143,8 +158,9 @@ Configuration keys are plain English. The parser normalises them to lowercase.
 - Config items are bulleted `- Key: Value` lines under the card declaration.
 - Card type names are normalised: `Send Message` → `send-message`, `Listen` → `listen`, `Wait` → `wait`.
 - Config keys are normalised to lowercase: `How long` → `how long`.
+- Config values may contain step references (`{step N: field}`); the parser passes them through untouched and the runner resolves them at execution time.
 - Missing optional sections result in empty defaults, not errors.
-- Missing required sections (title, steps) are added to `recipe.errors[]`.
+- `parseRecipe` returns a `ParsedRecipe` discriminated union: `{ success: true, recipe }` when the file is valid, or `{ success: false, errors, partialRecipe }` when a required section (title, steps) is missing or malformed. Parsers never throw.
 
 ---
 
