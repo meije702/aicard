@@ -1,7 +1,7 @@
 // App — thin composition manifest.
 // Wires screens, state, and overlays together. Business logic lives in hooks and modules.
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Recipe, SousChefSetup } from '../types.ts'
 import type { RunState } from '../runner/recipe-runner.ts'
 import { parseRecipe } from '../parser/recipe-parser.ts'
@@ -13,6 +13,7 @@ import reviewRequestMd from '../fixtures/recipes/review-request.recipe.md?raw'
 import { builtInCards } from '../fixtures/pantry/built-in-cards.ts'
 import { getEquipmentDefinition } from '../fixtures/equipment/index.ts'
 import { loadSousChefSetup, saveSousChefSetup, deriveActiveConfig } from './sous-chef-storage.ts'
+import { hasSeenTour, markTourSeen } from './first-run.ts'
 import { useTheme } from './hooks/use-theme.ts'
 import { useEquipmentWizard } from './hooks/use-equipment-wizard.ts'
 import Kitchen from './Kitchen.tsx'
@@ -68,6 +69,16 @@ export default function App() {
   }
 
   const activeSousChefConfig = deriveActiveConfig(sousChefSetup)
+
+  // First-run guidance: auto-launch the recipe tour the first time a new user
+  // opens any recipe, exactly once. The tour is skippable (Escape / close) and
+  // works without a sous chef configured (it falls back to built-in stops).
+  useEffect(() => {
+    if (screen === 'recipe' && activeRecipe && !hasSeenTour()) {
+      markTourSeen()
+      setTourActive(true)
+    }
+  }, [screen, activeRecipe])
 
   function persistKitchen(updated: ReturnType<typeof loadKitchen>) {
     setKitchen(updated)
