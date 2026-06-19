@@ -2,7 +2,9 @@
 
 *Things on our mind. Not a plan — just a surface for thinking.*
 
-*Last touched: 19 June 2026*
+*When something here graduates into a sequenced plan, it moves to `docs/ROADMAP.md`.*
+
+*Last touched: 20 June 2026*
 
 ---
 

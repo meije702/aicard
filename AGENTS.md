@@ -71,6 +71,8 @@ Wrong vocabulary is the single fastest signal that a contribution was generated 
 
 ## Roadmap — what comes after v1
 
+**See `docs/ROADMAP.md` for the full sequenced roadmap and the current focus.** The summary below lists the named milestones; the roadmap doc puts them in dependency order (Validate → Travel → Learn → Survive) and states what we are building now.
+
 ### v4 — Techniques and house style ✓ Implemented
 
 Cards are agent skills. Techniques teach the sous chef how to use each skill well. See `docs/AICard_Techniques.md` for the full design.
