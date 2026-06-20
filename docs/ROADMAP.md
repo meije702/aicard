@@ -119,7 +119,7 @@ gated on.
 ## Phase 4 — Recipes that survive + deepen the pantry
 
 - **Binary as a local service.** Evolve `src/server.ts` from a static server
-  into a lightweight always-on local agent: persist run state to disk and add a
+  into a lightweight always-on local service: persist run state to disk and add a
   scheduler that advances Wait steps with the tab closed, plus a small API the
   frontend polls. Solves the named Wait trade-off. The most architectural bet —
   deferred because it isn't blocking early validation.
