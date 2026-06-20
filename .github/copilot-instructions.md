@@ -1,7 +1,7 @@
 # Copilot instructions for AICard
 
-AICard is an open-source, no-code tool that lets ordinary people build AI
-automations with a **recipe-and-card** metaphor — no APIs, no coding. Core
+AICard is an open-source, no-code tool that lets ordinary people build with AI
+using a **recipe-and-card** metaphor — no APIs, no coding. Core
 thesis: *if you can follow a recipe, you can build with AI.* It is a Deno +
 React + TypeScript app that runs entirely in the browser and ships as a single
 `./aicard` binary. There is no backend.
